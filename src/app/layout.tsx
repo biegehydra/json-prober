@@ -16,6 +16,7 @@ export const metadata: Metadata = {
   title: "JSON Prober — Search JSON, Generate Accessor Code",
   description:
     "Paste JSON, search by key or value, and get copy-paste-ready accessor code for C#, Python, JavaScript, Java, Go, and more. Free online JSON path finder and code generator.",
+  authors: [{ name: "Connor Hallman", url: "https://github.com/biegehydra" }],
   icons: {
     icon: "/favicon.ico",
   },

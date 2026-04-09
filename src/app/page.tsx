@@ -163,6 +163,10 @@ export default function Home() {
             Search JSON, generate accessor code
           </span>
         </div>
+        <div className="flex items-center gap-4">
+        <span className="hidden sm:inline text-xs text-text-muted">
+          Created by <span className="text-text-secondary">Connor Hallman</span>
+        </span>
         <a
           href="https://github.com/biegehydra/json-prober"
           target="_blank"
@@ -174,6 +178,7 @@ export default function Home() {
           </svg>
           GitHub
         </a>
+        </div>
       </header>
 
       {/* Main content — resizable panels */}
