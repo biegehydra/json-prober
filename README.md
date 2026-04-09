@@ -10,7 +10,9 @@ Paste or upload your JSON payload, then search by key name, value, or both. JSON
 
 You can filter by match type (contains, equals, regex, etc.), narrow results by JSON type, run numeric comparisons, and ignore specific keys. Pick your language from the code format dropdown and each result updates instantly. Currently supports C# (Newtonsoft.Json, System.Text.Json), Python, JavaScript/TypeScript, Java (Jackson/Gson), Go, Ruby, PHP, Kotlin, Swift, and Rust.
 
-<!-- TODO: Add screenshot of the main search page -->
+<video autoplay loop muted playsinline width="700">
+  <source src="content/search-video.mp4" type="video/mp4">
+</video>
 
 ## Path Explorer
 
