@@ -15,6 +15,7 @@ import type { SearchOptions } from "@/lib/search/types";
 import { registerAllPresets } from "@/lib/serializers/presets";
 import { getAllSerializers, getSerializer } from "@/lib/serializers/registry";
 import { useSerializerStore } from "@/stores/serializer";
+import { trackExploreRoot, trackClickGithub } from "@/lib/analytics";
 
 registerAllPresets();
 
@@ -45,6 +46,7 @@ export default function Home() {
     }
     const rootVar = (serializerOptions.rootVar as string) || "root";
     window.open(`/explore?path=${encodeURIComponent(rootVar)}`, "_blank");
+    trackExploreRoot();
   }, [jsonInput, serializerOptions]);
 
   const searchResults = useMemo(() => {
@@ -172,6 +174,7 @@ export default function Home() {
           href="https://github.com/biegehydra/json-prober"
           target="_blank"
           rel="noopener noreferrer"
+          onClick={trackClickGithub}
           className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors"
         >
           <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor">

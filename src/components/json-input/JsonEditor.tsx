@@ -5,6 +5,7 @@ import CodeMirror, { type ViewUpdate } from "@uiw/react-codemirror";
 import { json } from "@codemirror/lang-json";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { Upload } from "lucide-react";
+import { trackPasteJson, trackUploadJson } from "@/lib/analytics";
 
 interface JsonEditorProps {
   value: string;
@@ -31,6 +32,7 @@ export function JsonEditor({ value, onChange, error }: JsonEditorProps) {
         const text = ev.target?.result;
         if (typeof text === "string") {
           onChange(tryBeautify(text));
+          trackUploadJson();
         }
       };
       reader.readAsText(file);
@@ -46,6 +48,7 @@ export function JsonEditor({ value, onChange, error }: JsonEditorProps) {
       );
       if (isPaste) {
         onChange(tryBeautify(val));
+        trackPasteJson();
       } else {
         onChange(val);
       }

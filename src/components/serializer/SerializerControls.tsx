@@ -3,6 +3,7 @@
 import { useCallback } from "react";
 import type { Serializer } from "@/lib/serializers/types";
 import { SerializerSelect } from "./SerializerSelect";
+import { trackChangeSerializer, trackToggleOption } from "@/lib/analytics";
 
 interface SerializerControlsProps {
   serializers: Serializer[];
@@ -21,11 +22,22 @@ export function SerializerControls({
 }: SerializerControlsProps) {
   const selected = serializers.find((s) => s.definition.id === selectedId);
 
+  const handleSelectSerializer = useCallback(
+    (id: string) => {
+      onSelectId(id);
+      trackChangeSerializer(id);
+    },
+    [onSelectId]
+  );
+
   const updateOption = useCallback(
     (id: string, value: unknown) => {
       onChangeOptions({ ...options, [id]: value });
+      if (typeof value === "boolean") {
+        trackToggleOption(selectedId, id, value);
+      }
     },
-    [options, onChangeOptions]
+    [options, onChangeOptions, selectedId]
   );
 
   return (
@@ -35,7 +47,7 @@ export function SerializerControls({
         <SerializerSelect
           serializers={serializers}
           selectedId={selectedId}
-          onSelect={onSelectId}
+          onSelect={handleSelectSerializer}
         />
       </div>
 

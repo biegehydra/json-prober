@@ -14,6 +14,7 @@ import { parseBracketPath, resolvePathSegments, reconcileSegments } from "@/lib/
 import { CopyButton } from "./CopyButton";
 import type { AccessorDefinition } from "@/lib/serializers/types";
 import { transformKey, findAmbiguousKeys } from "@/lib/case-transforms";
+import { trackAutocompleteAccept } from "@/lib/analytics";
 
 interface PathInputProps {
   value: string;
@@ -510,6 +511,7 @@ export function PathInput({
       justSelectedRef.current = true;
       onChange(newValue);
       setDismissed(true);
+      trackAutocompleteAccept();
       requestAnimationFrame(() => inputRef.current?.focus());
     },
     [accessor, onChange, accessorDef]

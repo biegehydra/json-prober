@@ -14,6 +14,7 @@ import { getAllSerializers, getSerializer } from "@/lib/serializers/registry";
 import { convertPath } from "@/lib/serializers/serialize";
 import { useSerializerStore } from "@/stores/serializer";
 import type { AccessorDefinition } from "@/lib/serializers/types";
+import { trackChangeSerializer } from "@/lib/analytics";
 
 registerAllPresets();
 
@@ -26,7 +27,11 @@ function ExploreContent() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const serializerId = useSerializerStore((s) => s.serializerId);
-  const setSerializerId = useSerializerStore((s) => s.setSerializerId);
+  const rawSetSerializerId = useSerializerStore((s) => s.setSerializerId);
+  const setSerializerId = useCallback((id: string) => {
+    rawSetSerializerId(id);
+    trackChangeSerializer(id);
+  }, [rawSetSerializerId]);
 
   const allSerializers = useMemo(() => getAllSerializers(), []);
   const currentSerializer = useMemo(
