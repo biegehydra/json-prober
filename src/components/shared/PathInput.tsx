@@ -240,6 +240,7 @@ export function PathInput({
 }: PathInputProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [dismissed, setDismissed] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
   const justSelectedRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -546,7 +547,8 @@ export function PathInput({
     [suggestions, selectedIndex, selectSuggestion]
   );
 
-  const showDropdown = suggestions.length > 0 || header;
+  const showDropdown =
+    inputFocused && (suggestions.length > 0 || header);
   const partialHighlight =
     accessor?.type === "string"
       ? accessor.partialKey
@@ -565,7 +567,14 @@ export function PathInput({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          onBlur={() => setDismissed(true)}
+          onFocus={() => {
+            setInputFocused(true);
+            setDismissed(false);
+          }}
+          onBlur={() => {
+            setInputFocused(false);
+            setDismissed(true);
+          }}
           placeholder={placeholder}
           spellCheck={false}
           autoComplete="off"
