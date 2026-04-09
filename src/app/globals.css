@@ -1,26 +1,65 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-base: #09090b;
+  --color-panel: #111114;
+  --color-surface: #18181b;
+  --color-surface-hover: #1f1f23;
+  --color-input: #131316;
+  --color-border: #27272a;
+  --color-border-hover: #3f3f46;
+  --color-border-focus: #6366f1;
+  --color-text-primary: #e4e4e7;
+  --color-text-secondary: #a1a1aa;
+  --color-text-muted: #52525b;
+  --color-accent: #6366f1;
+  --color-accent-hover: #818cf8;
+  --color-accent-muted: #6366f120;
+  --color-success: #22c55e;
+  --color-error: #ef4444;
+  --color-warning: #eab308;
+  --color-key: #93c5fd;
+  --color-string: #86efac;
+  --color-number: #fde68a;
+  --color-null: #a1a1aa;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: var(--color-base);
+  color: var(--color-text-primary);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+::selection {
+  background: var(--color-accent-muted);
+}
+
+.cm-editor {
+  height: 100% !important;
+  background: transparent !important;
+  font-family: var(--font-mono), ui-monospace, monospace !important;
+}
+
+.cm-editor .cm-gutters {
+  background: transparent !important;
+  border-right: 1px solid var(--color-border) !important;
+}
+
+.cm-editor .cm-activeLineGutter,
+.cm-editor .cm-activeLine {
+  background: var(--color-surface) !important;
+}
+
+.cm-editor .cm-selectionBackground {
+  background: var(--color-accent-muted) !important;
+}
+
+.cm-editor.cm-focused {
+  outline: none !important;
 }
