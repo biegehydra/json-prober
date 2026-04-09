@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import type { Serializer } from "@/lib/serializers/types";
+import { SerializerSelect } from "./SerializerSelect";
 
 interface SerializerControlsProps {
   serializers: Serializer[];
@@ -30,23 +31,12 @@ export function SerializerControls({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-xs text-text-secondary font-medium">Output</span>
-        <div className="inline-flex rounded border border-border overflow-hidden">
-          {serializers.map((s) => (
-            <button
-              key={s.definition.id}
-              onClick={() => onSelectId(s.definition.id)}
-              className={`px-3 py-1.5 text-xs transition-colors ${
-                selectedId === s.definition.id
-                  ? "bg-accent text-white"
-                  : "text-text-secondary hover:text-text-primary hover:bg-surface-hover"
-              }`}
-              title={s.definition.description}
-            >
-              {s.definition.label}
-            </button>
-          ))}
-        </div>
+        <span className="text-xs text-text-secondary font-medium">Code Format</span>
+        <SerializerSelect
+          serializers={serializers}
+          selectedId={selectedId}
+          onSelect={onSelectId}
+        />
       </div>
 
       {selected && selected.definition.options.length > 0 && (

@@ -1,33 +1,42 @@
 import type { PathSegment } from "./types";
 
+function unescapeKey(raw: string, quote: string): string {
+  return raw
+    .replace(new RegExp(`\\\\${quote.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "g"), quote)
+    .replace(/\\\\/g, "\\");
+}
+
 /**
  * Parse a path string into PathSegments.
- * Handles mixed formats:
- *   root["data"]["sections"][6]["lat"]
- *   root?["data"]?["sections"]?[6]?["lat"]
- *   root.GetProperty("data").GetProperty("sections")[6]
- *   root.Method("key")[0].Method("other")
+ * Handles mixed formats including bracket and method notation
+ * with both double and single quoted strings:
+ *   root["data"]["sections"][6]
+ *   root['key'][0]
+ *   root?.["key"]?.[0]
+ *   root.GetProperty("key")[0]
+ *   root.get("key").get(0)
  */
 export function parseBracketPath(input: string): PathSegment[] {
-  const cleaned = input.replace(/\?\[/g, "[").replace(/\?\./g, ".");
+  const cleaned = input.replace(/\?\[/g, "[").replace(/\?\.\[/g, "[").replace(/\?\./g, ".");
 
   const segments: PathSegment[] = [];
+
   const combined =
-    /\[\s*"((?:[^"\\]|\\.)*)"\s*\]|\[\s*(\d+)\s*\]|\.\w+\(\s*"((?:[^"\\]|\\.)*)"\s*\)/g;
+    /\[\s*"((?:[^"\\]|\\.)*)"\s*\]|\[\s*'((?:[^'\\]|\\.)*)'\s*\]|\[\s*(\d+)\s*\]|\.\w+\(\s*"((?:[^"\\]|\\.)*)"\s*\)|\.\w+\(\s*'((?:[^'\\]|\\.)*)'\s*\)|\.\w+\(\s*(\d+)\s*\)/g;
 
   for (const m of cleaned.matchAll(combined)) {
     if (m[1] !== undefined) {
-      segments.push({
-        type: "key",
-        value: m[1].replace(/\\"/g, '"').replace(/\\\\/g, "\\"),
-      });
+      segments.push({ type: "key", value: unescapeKey(m[1], '"') });
     } else if (m[2] !== undefined) {
-      segments.push({ type: "index", value: parseInt(m[2], 10) });
+      segments.push({ type: "key", value: unescapeKey(m[2], "'") });
     } else if (m[3] !== undefined) {
-      segments.push({
-        type: "key",
-        value: m[3].replace(/\\"/g, '"').replace(/\\\\/g, "\\"),
-      });
+      segments.push({ type: "index", value: parseInt(m[3], 10) });
+    } else if (m[4] !== undefined) {
+      segments.push({ type: "key", value: unescapeKey(m[4], '"') });
+    } else if (m[5] !== undefined) {
+      segments.push({ type: "key", value: unescapeKey(m[5], "'") });
+    } else if (m[6] !== undefined) {
+      segments.push({ type: "index", value: parseInt(m[6], 10) });
     }
   }
 

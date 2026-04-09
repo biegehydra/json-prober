@@ -2,8 +2,36 @@ import { registerSerializer } from "../registry";
 import { createSerializer } from "../serialize";
 import { csharpNewtonsoftDef } from "./csharp-newtonsoft";
 import { csharpStjDef } from "./csharp-stj";
+import { pythonDictDef } from "./python";
+import { jsBracketDef } from "./javascript";
+import { javaJacksonDef } from "./java";
+import { goMapDef } from "./go";
+import { rubyHashDef } from "./ruby";
+import { phpArrayDef } from "./php";
+import { kotlinMapDef } from "./kotlin";
+import { swiftSwiftyJsonDef } from "./swift";
+import { rustSerdeDef } from "./rust";
+
+const ALL_DEFINITIONS = [
+  csharpNewtonsoftDef,
+  csharpStjDef,
+  goMapDef,
+  javaJacksonDef,
+  jsBracketDef,
+  kotlinMapDef,
+  phpArrayDef,
+  pythonDictDef,
+  rubyHashDef,
+  rustSerdeDef,
+  swiftSwiftyJsonDef,
+];
+
+let registered = false;
 
 export function registerAllPresets(): void {
-  registerSerializer(createSerializer(csharpNewtonsoftDef));
-  registerSerializer(createSerializer(csharpStjDef));
+  if (registered) return;
+  registered = true;
+  for (const def of ALL_DEFINITIONS) {
+    registerSerializer(createSerializer(def));
+  }
 }

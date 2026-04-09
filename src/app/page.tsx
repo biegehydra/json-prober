@@ -12,11 +12,8 @@ import { searchJson } from "@/lib/search/engine";
 import { DEFAULT_SEARCH_OPTIONS } from "@/lib/search/types";
 import type { SearchOptions } from "@/lib/search/types";
 import { registerAllPresets } from "@/lib/serializers/presets";
-import {
-  getAllSerializers,
-  getSerializer,
-} from "@/lib/serializers/registry";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { getAllSerializers, getSerializer } from "@/lib/serializers/registry";
+import { useSerializerStore } from "@/stores/serializer";
 
 registerAllPresets();
 
@@ -26,13 +23,10 @@ export default function Home() {
     DEFAULT_SEARCH_OPTIONS
   );
 
-  const [serializerId, setSerializerId] = useLocalStorage(
-    "jsondig-serializer",
-    "csharp-newtonsoft"
-  );
-  const [serializerOptions, setSerializerOptions] = useLocalStorage<
-    Record<string, unknown>
-  >("jsondig-serializer-opts", {});
+  const serializerId = useSerializerStore((s) => s.serializerId);
+  const serializerOptions = useSerializerStore((s) => s.serializerOptions);
+  const setSerializerId = useSerializerStore((s) => s.setSerializerId);
+  const setSerializerOptions = useSerializerStore((s) => s.setSerializerOptions);
 
   const allSerializers = useMemo(() => getAllSerializers(), []);
   const currentSerializer = useMemo(
@@ -40,28 +34,17 @@ export default function Home() {
     [serializerId, allSerializers]
   );
 
-  const handleSerializerChange = (id: string) => {
-    setSerializerId(id);
-    setSerializerOptions({});
-  };
-
   const parseResult = useMemo(() => parseJson(jsonInput), [jsonInput]);
 
   const openRootInExplorer = useCallback(() => {
     try {
       localStorage.setItem("jsondig-explore-data", jsonInput);
-      if (currentSerializer) {
-        localStorage.setItem(
-          "jsondig-explore-def",
-          JSON.stringify(currentSerializer.definition)
-        );
-      }
     } catch {
       // quota exceeded
     }
     const rootVar = (serializerOptions.rootVar as string) || "root";
     window.open(`/explore?path=${encodeURIComponent(rootVar)}`, "_blank");
-  }, [jsonInput, serializerOptions, currentSerializer]);
+  }, [jsonInput, serializerOptions]);
 
   const searchResults = useMemo(() => {
     if (!parseResult.success || !parseResult.data) return [];
@@ -97,7 +80,7 @@ export default function Home() {
               <SerializerControls
                 serializers={allSerializers}
                 selectedId={serializerId}
-                onSelectId={handleSerializerChange}
+                onSelectId={setSerializerId}
                 options={serializerOptions}
                 onChangeOptions={setSerializerOptions}
               />

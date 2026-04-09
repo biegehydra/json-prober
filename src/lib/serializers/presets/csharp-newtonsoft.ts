@@ -2,7 +2,7 @@ import type { AccessorDefinition } from "../types";
 
 export const csharpNewtonsoftDef: AccessorDefinition = {
   id: "csharp-newtonsoft",
-  label: "C# (Newtonsoft.Json)",
+  label: "Newtonsoft.Json",
   language: "csharp",
   description: "JToken bracket accessor syntax for Newtonsoft.Json",
 

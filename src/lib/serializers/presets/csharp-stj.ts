@@ -2,7 +2,7 @@ import type { AccessorDefinition } from "../types";
 
 export const csharpStjDef: AccessorDefinition = {
   id: "csharp-stj",
-  label: "C# (System.Text.Json)",
+  label: "System.Text.Json",
   language: "csharp",
   description: "JsonElement accessor syntax for System.Text.Json",
 

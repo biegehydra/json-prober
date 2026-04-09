@@ -9,9 +9,14 @@ import { oneDark } from "@codemirror/theme-one-dark";
 import { EditorState } from "@codemirror/state";
 import { CopyButton } from "@/components/shared/CopyButton";
 import { PathInput } from "@/components/shared/PathInput";
+import { SerializerSelect } from "@/components/serializer/SerializerSelect";
 import { parseJson } from "@/lib/parser";
 import { parseBracketPath, resolvePathSegments } from "@/lib/path-resolver";
-import type { AccessorDefinition } from "@/lib/serializers/types";
+import { registerAllPresets } from "@/lib/serializers/presets";
+import { getAllSerializers, getSerializer } from "@/lib/serializers/registry";
+import { useSerializerStore } from "@/stores/serializer";
+
+registerAllPresets();
 
 function ExploreContent() {
   const searchParams = useSearchParams();
@@ -20,7 +25,15 @@ function ExploreContent() {
   const [pathInput, setPathInput] = useState(initialPath);
   const [jsonData, setJsonData] = useState<unknown>(undefined);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [accessorDef, setAccessorDef] = useState<AccessorDefinition | undefined>(undefined);
+
+  const serializerId = useSerializerStore((s) => s.serializerId);
+  const setSerializerId = useSerializerStore((s) => s.setSerializerId);
+
+  const allSerializers = useMemo(() => getAllSerializers(), []);
+  const currentSerializer = useMemo(
+    () => getSerializer(serializerId) ?? allSerializers[0],
+    [serializerId, allSerializers]
+  );
 
   useEffect(() => {
     try {
@@ -35,15 +48,6 @@ function ExploreContent() {
         return;
       }
       setJsonData(parsed.data);
-
-      const defJson = localStorage.getItem("jsondig-explore-def");
-      if (defJson) {
-        try {
-          setAccessorDef(JSON.parse(defJson) as AccessorDefinition);
-        } catch {
-          // ignore malformed definition
-        }
-      }
     } catch {
       setLoadError("Failed to read JSON data from storage.");
     }
@@ -70,6 +74,8 @@ function ExploreContent() {
     setPathInput(value);
   }, []);
 
+  const accessorDef = currentSerializer?.definition;
+
   return (
     <div className="flex flex-col h-full">
       <header className="shrink-0 flex items-center gap-3 px-4 py-2.5 border-b border-border bg-panel">
@@ -84,6 +90,13 @@ function ExploreContent() {
         <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">
           Path Explorer
         </span>
+        <div className="ml-auto">
+          <SerializerSelect
+            serializers={allSerializers}
+            selectedId={currentSerializer?.definition.id ?? serializerId}
+            onSelect={setSerializerId}
+          />
+        </div>
       </header>
 
       {loadError ? (
