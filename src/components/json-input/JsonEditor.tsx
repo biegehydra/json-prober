@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import CodeMirror from "@uiw/react-codemirror";
+import CodeMirror, { type ViewUpdate } from "@uiw/react-codemirror";
 import { json } from "@codemirror/lang-json";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { Upload } from "lucide-react";
@@ -10,6 +10,15 @@ interface JsonEditorProps {
   value: string;
   onChange: (value: string) => void;
   error?: string;
+}
+
+function tryBeautify(text: string): string {
+  try {
+    const parsed = JSON.parse(text);
+    return JSON.stringify(parsed, null, 2);
+  } catch {
+    return text;
+  }
 }
 
 export function JsonEditor({ value, onChange, error }: JsonEditorProps) {
@@ -21,7 +30,7 @@ export function JsonEditor({ value, onChange, error }: JsonEditorProps) {
       reader.onload = (ev) => {
         const text = ev.target?.result;
         if (typeof text === "string") {
-          onChange(text);
+          onChange(tryBeautify(text));
         }
       };
       reader.readAsText(file);
@@ -30,9 +39,23 @@ export function JsonEditor({ value, onChange, error }: JsonEditorProps) {
     [onChange]
   );
 
+  const handleEditorChange = useCallback(
+    (val: string, viewUpdate: ViewUpdate) => {
+      const isPaste = viewUpdate.transactions.some((tr) =>
+        tr.isUserEvent("input.paste")
+      );
+      if (isPaste) {
+        onChange(tryBeautify(val));
+      } else {
+        onChange(val);
+      }
+    },
+    [onChange]
+  );
+
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+      <div className="shrink-0 flex items-center justify-between px-3 py-2 border-b border-border">
         <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">
           JSON Input
         </span>
@@ -48,25 +71,27 @@ export function JsonEditor({ value, onChange, error }: JsonEditorProps) {
         </label>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto">
-        <CodeMirror
-          value={value}
-          onChange={onChange}
-          extensions={[json()]}
-          theme={oneDark}
-          placeholder="Paste your JSON here..."
-          basicSetup={{
-            lineNumbers: true,
-            foldGutter: true,
-            highlightActiveLine: true,
-            bracketMatching: true,
-            autocompletion: false,
-          }}
-        />
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="h-full overflow-auto">
+          <CodeMirror
+            value={value}
+            onChange={handleEditorChange}
+            extensions={[json()]}
+            theme={oneDark}
+            placeholder="Paste your JSON here..."
+            basicSetup={{
+              lineNumbers: true,
+              foldGutter: true,
+              highlightActiveLine: true,
+              bracketMatching: true,
+              autocompletion: false,
+            }}
+          />
+        </div>
       </div>
 
       {error && (
-        <div className="px-3 py-2 text-xs text-error border-t border-border bg-error/5">
+        <div className="shrink-0 px-3 py-2 text-xs text-error border-t border-border bg-error/5">
           {error}
         </div>
       )}

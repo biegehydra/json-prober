@@ -36,7 +36,7 @@ export function CopyButton({ text, className = "", size = 14 }: CopyButtonProps)
       className={`inline-flex items-center justify-center rounded p-1.5 transition-colors ${
         copied
           ? "text-success"
-          : "text-text-muted hover:text-text-secondary hover:bg-surface-hover"
+          : "text-text-muted hover:text-text-primary hover:bg-surface-hover"
       } ${className}`}
       title={copied ? "Copied!" : "Copy to clipboard"}
     >

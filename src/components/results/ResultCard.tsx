@@ -105,7 +105,7 @@ export function ResultCard({
       <div className="flex items-start gap-2 px-3 py-2.5">
         <button
           onClick={() => setExpanded(!expanded)}
-          className="mt-0.5 p-0.5 text-text-muted hover:text-text-secondary shrink-0"
+          className="mt-0.5 p-0.5 text-text-muted hover:text-text-primary shrink-0"
         >
           {expanded ? (
             <ChevronDown size={14} />
@@ -143,7 +143,7 @@ export function ResultCard({
         <div className="shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
           <button
             onClick={openInExplorer}
-            className="inline-flex items-center justify-center rounded p-1.5 text-text-muted hover:text-text-secondary hover:bg-surface-hover transition-colors"
+            className="inline-flex items-center justify-center rounded p-1.5 text-text-muted hover:text-text-primary hover:bg-surface-hover transition-colors"
             title="Explore parent in new tab"
           >
             <ExternalLink size={14} />

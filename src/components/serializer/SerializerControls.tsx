@@ -30,7 +30,7 @@ export function SerializerControls({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-xs text-text-muted">Output</span>
+        <span className="text-xs text-text-secondary font-medium">Output</span>
         <div className="inline-flex rounded border border-border overflow-hidden">
           {serializers.map((s) => (
             <button
@@ -71,7 +71,7 @@ export function SerializerControls({
             if (opt.type === "string") {
               return (
                 <div key={opt.id} className="flex items-center gap-1.5">
-                  <span className="text-xs text-text-muted">{opt.label}</span>
+                  <span className="text-xs text-text-secondary">{opt.label}</span>
                   <input
                     type="text"
                     value={(options[opt.id] as string) ?? (opt.default as string)}

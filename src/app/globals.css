@@ -2,26 +2,30 @@
 
 @theme inline {
   --color-base: #09090b;
-  --color-panel: #111114;
-  --color-surface: #18181b;
-  --color-surface-hover: #1f1f23;
-  --color-input: #131316;
-  --color-border: #27272a;
-  --color-border-hover: #3f3f46;
-  --color-border-focus: #6366f1;
-  --color-text-primary: #e4e4e7;
-  --color-text-secondary: #a1a1aa;
-  --color-text-muted: #52525b;
+  --color-panel: #0f0f12;
+  --color-surface: #1a1a1f;
+  --color-surface-hover: #222228;
+  --color-input: #13131a;
+  --color-border: #2e2e36;
+  --color-border-hover: #4a4a54;
+  --color-border-focus: #818cf8;
+  --color-text-primary: #f4f4f5;
+  --color-text-secondary: #b4b4be;
+  --color-text-muted: #75757e;
   --color-accent: #6366f1;
-  --color-accent-hover: #818cf8;
-  --color-accent-muted: #6366f120;
-  --color-success: #22c55e;
-  --color-error: #ef4444;
-  --color-warning: #eab308;
+  --color-accent-hover: #a5b4fc;
+  --color-accent-muted: #6366f130;
+  --color-accent-subtle: #6366f118;
+  --color-success: #34d399;
+  --color-error: #f87171;
+  --color-warning: #fbbf24;
   --color-key: #93c5fd;
   --color-string: #86efac;
   --color-number: #fde68a;
-  --color-null: #a1a1aa;
+  --color-null: #d4d4d8;
+  --color-chip: #23232b;
+  --color-chip-border: #3a3a44;
+  --color-chip-text: #a0a0ac;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -33,11 +37,11 @@ body {
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-border) transparent;
+  scrollbar-color: var(--color-border-hover) transparent;
 }
 
 ::selection {
-  background: var(--color-accent-muted);
+  background: #818cf850;
 }
 
 .cm-editor {
@@ -47,7 +51,7 @@ body {
 }
 
 .cm-editor .cm-gutters {
-  background: transparent !important;
+  background: var(--color-panel) !important;
   border-right: 1px solid var(--color-border) !important;
 }
 
@@ -56,10 +60,24 @@ body {
   background: var(--color-surface) !important;
 }
 
-.cm-editor .cm-selectionBackground {
-  background: var(--color-accent-muted) !important;
+.cm-editor .cm-selectionBackground,
+.cm-editor.cm-focused .cm-selectionBackground {
+  background: #818cf840 !important;
 }
 
 .cm-editor.cm-focused {
   outline: none !important;
+}
+
+.cm-editor .cm-placeholder {
+  color: var(--color-text-muted) !important;
+}
+
+/* Resize handle */
+.resize-handle {
+  touch-action: none;
+}
+.resize-handle:hover,
+.resize-handle:active {
+  background: var(--color-accent) !important;
 }

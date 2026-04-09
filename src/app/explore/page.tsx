@@ -108,28 +108,30 @@ function ExploreContent() {
           </div>
 
           {/* Beautified JSON output */}
-          <div className="flex-1 min-h-0 relative">
+          <div className="flex-1 min-h-0 overflow-hidden relative">
             {beautified && (
               <div className="absolute top-2 right-4 z-10">
                 <CopyButton text={beautified} />
               </div>
             )}
-            <CodeMirror
-              value={beautified}
-              extensions={[
-                json(),
-                EditorState.readOnly.of(true),
-              ]}
-              theme={oneDark}
-              basicSetup={{
-                lineNumbers: true,
-                foldGutter: true,
-                highlightActiveLine: false,
-                bracketMatching: true,
-                autocompletion: false,
-              }}
-              readOnly
-            />
+            <div className="h-full overflow-auto">
+              <CodeMirror
+                value={beautified}
+                extensions={[
+                  json(),
+                  EditorState.readOnly.of(true),
+                ]}
+                theme={oneDark}
+                basicSetup={{
+                  lineNumbers: true,
+                  foldGutter: true,
+                  highlightActiveLine: false,
+                  bracketMatching: true,
+                  autocompletion: false,
+                }}
+                readOnly
+              />
+            </div>
           </div>
         </div>
       )}

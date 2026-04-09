@@ -59,12 +59,12 @@ function ToggleGroup<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="inline-flex rounded border border-border overflow-hidden">
+    <div className="inline-flex rounded-md border border-border overflow-hidden">
       {options.map((opt) => (
         <button
           key={opt.value}
           onClick={() => onChange(opt.value)}
-          className={`px-2.5 py-1 text-xs transition-colors ${
+          className={`px-2.5 py-1 text-xs font-medium transition-colors ${
             value === opt.value
               ? "bg-accent text-white"
               : "text-text-secondary hover:text-text-primary hover:bg-surface-hover"
@@ -131,12 +131,12 @@ export function SearchPanel({
               : "Paste JSON first..."
           }
           disabled={!hasJson || options.numericMode}
-          className="w-full pl-9 pr-3 py-2 text-sm bg-input border border-border rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-focus transition-colors disabled:opacity-50"
+          className="w-full pl-9 pr-3 py-2 text-sm bg-input border border-border rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-focus transition-colors disabled:opacity-40"
         />
         {options.query && !options.numericMode && (
           <button
             onClick={() => update({ query: "" })}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-text-muted hover:text-text-secondary"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-text-muted hover:text-text-primary"
           >
             <X size={14} />
           </button>
@@ -146,7 +146,7 @@ export function SearchPanel({
       {/* Search mode + match type row */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-text-muted">Mode</span>
+          <span className="text-xs text-text-secondary font-medium">Mode</span>
           <ToggleGroup
             options={SEARCH_MODES}
             value={options.mode}
@@ -156,7 +156,7 @@ export function SearchPanel({
 
         {!options.numericMode && (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-text-muted">Match</span>
+            <span className="text-xs text-text-secondary font-medium">Match</span>
             <select
               value={options.matchType}
               onChange={(e) =>
@@ -227,7 +227,7 @@ export function SearchPanel({
 
               {options.numericComparison === "between" && (
                 <>
-                  <span className="text-xs text-text-muted">and</span>
+                  <span className="text-xs text-text-secondary">and</span>
                   <input
                     type="number"
                     value={options.numericValueEnd}
@@ -248,7 +248,7 @@ export function SearchPanel({
 
       {/* Type filter */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-text-muted">Types</span>
+        <span className="text-xs text-text-secondary font-medium">Types</span>
         {TYPE_FILTERS.map((tf) => {
           const active = options.typeFilter.includes(tf.value);
           return (
@@ -260,10 +260,10 @@ export function SearchPanel({
                   : [...options.typeFilter, tf.value];
                 update({ typeFilter: next });
               }}
-              className={`px-2 py-0.5 text-xs rounded-full border transition-colors ${
+              className={`px-2.5 py-1 text-xs rounded-full border transition-all ${
                 active
-                  ? "border-accent bg-accent-muted text-accent-hover"
-                  : "border-border text-text-muted hover:text-text-secondary hover:border-border-hover"
+                  ? "border-accent bg-accent-muted text-accent-hover font-medium"
+                  : "border-chip-border bg-chip text-chip-text hover:text-text-primary hover:border-border-hover hover:bg-surface-hover"
               }`}
             >
               {tf.label}
@@ -273,7 +273,7 @@ export function SearchPanel({
         {options.typeFilter.length > 0 && (
           <button
             onClick={() => update({ typeFilter: [] })}
-            className="text-xs text-text-muted hover:text-text-secondary"
+            className="text-xs text-text-muted hover:text-text-primary"
           >
             Clear
           </button>
@@ -282,16 +282,16 @@ export function SearchPanel({
 
       {/* Ignore keys */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-text-muted">Ignore keys</span>
+        <span className="text-xs text-text-secondary font-medium">Ignore keys</span>
         {options.ignoreKeys.map((key) => (
           <span
             key={key}
-            className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-surface border border-border text-text-secondary"
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-chip border border-chip-border text-chip-text"
           >
             {key}
             <button
               onClick={() => removeIgnoreKey(key)}
-              className="hover:text-error"
+              className="hover:text-error transition-colors"
             >
               <X size={10} />
             </button>
@@ -302,7 +302,7 @@ export function SearchPanel({
             const key = prompt("Key name to ignore:");
             if (key) addIgnoreKey(key.trim());
           }}
-          className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border border-dashed border-border text-text-muted hover:text-text-secondary hover:border-border-hover transition-colors"
+          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full border border-dashed border-chip-border text-chip-text hover:text-text-primary hover:border-border-hover transition-colors"
         >
           <Plus size={10} />
           Add
@@ -311,7 +311,7 @@ export function SearchPanel({
 
       {/* Result count */}
       {hasJson && (options.query || options.numericMode) && (
-        <div className="text-xs text-text-muted">
+        <div className="text-xs text-text-secondary">
           {resultCount === 0
             ? "No matches found"
             : `${resultCount} match${resultCount !== 1 ? "es" : ""} found`}
