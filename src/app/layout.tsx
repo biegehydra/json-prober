@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   description:
     "Paste JSON, search by key or value, and get copy-paste-ready accessor code for C#, Python, JavaScript, Java, Go, and more. Free online JSON path finder and code generator.",
   icons: {
-    icon: "/icon.svg",
+    icon: "/favicon.ico",
   },
 };
 

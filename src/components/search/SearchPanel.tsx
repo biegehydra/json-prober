@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState, useRef, useEffect } from "react";
 import { Search, X, Plus } from "lucide-react";
+import { Chip } from "@/components/ui/Chip";
 import type {
   SearchOptions,
   SearchMode,
@@ -63,6 +64,7 @@ function ToggleGroup<T extends string>({
       {options.map((opt) => (
         <button
           key={opt.value}
+          type="button"
           onClick={() => onChange(opt.value)}
           className={`px-2.5 py-1 text-xs font-medium transition-colors ${
             value === opt.value
@@ -73,6 +75,77 @@ function ToggleGroup<T extends string>({
           {opt.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+function IgnoreKeysRow({
+  keys,
+  onAdd,
+  onRemove,
+}: {
+  keys: string[];
+  onAdd: (key: string) => void;
+  onRemove: (key: string) => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (adding) {
+      inputRef.current?.focus();
+    }
+  }, [adding]);
+
+  const submit = () => {
+    const trimmed = inputValue.trim();
+    if (trimmed) {
+      onAdd(trimmed);
+    }
+    setInputValue("");
+    setAdding(false);
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-xs text-text-secondary font-medium">Ignore keys</span>
+      {keys.map((key) => (
+        <Chip
+          key={key}
+          onRemove={() => onRemove(key)}
+          removeLabel={`Remove ${key}`}
+        >
+          {key}
+        </Chip>
+      ))}
+      {adding ? (
+        <input
+          ref={inputRef}
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") submit();
+            if (e.key === "Escape") {
+              setInputValue("");
+              setAdding(false);
+            }
+          }}
+          onBlur={submit}
+          placeholder="Key name…"
+          className="w-28 px-2.5 py-1 text-xs rounded-full bg-input border border-border-focus text-text-primary placeholder:text-text-muted focus:outline-none"
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full border border-dashed border-chip-border text-chip-text hover:text-text-primary hover:border-border-hover transition-colors"
+        >
+          <Plus size={10} />
+          Add
+        </button>
+      )}
     </div>
   );
 }
@@ -135,6 +208,7 @@ export function SearchPanel({
         />
         {options.query && !options.numericMode && (
           <button
+            type="button"
             onClick={() => update({ query: "" })}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-text-muted hover:text-text-primary"
           >
@@ -252,28 +326,25 @@ export function SearchPanel({
         {TYPE_FILTERS.map((tf) => {
           const active = options.typeFilter.includes(tf.value);
           return (
-            <button
+            <Chip
               key={tf.value}
+              active={active}
               onClick={() => {
                 const next = active
                   ? options.typeFilter.filter((t) => t !== tf.value)
                   : [...options.typeFilter, tf.value];
                 update({ typeFilter: next });
               }}
-              className={`px-2.5 py-1 text-xs rounded-full border transition-all ${
-                active
-                  ? "border-accent bg-accent-muted text-accent-hover font-medium"
-                  : "border-chip-border bg-chip text-chip-text hover:text-text-primary hover:border-border-hover hover:bg-surface-hover"
-              }`}
             >
               {tf.label}
-            </button>
+            </Chip>
           );
         })}
         {options.typeFilter.length > 0 && (
           <button
+            type="button"
             onClick={() => update({ typeFilter: [] })}
-            className="text-xs text-text-muted hover:text-text-primary"
+            className="text-xs text-text-muted hover:text-text-primary transition-colors"
           >
             Clear
           </button>
@@ -281,33 +352,11 @@ export function SearchPanel({
       </div>
 
       {/* Ignore keys */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-text-secondary font-medium">Ignore keys</span>
-        {options.ignoreKeys.map((key) => (
-          <span
-            key={key}
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-chip border border-chip-border text-chip-text"
-          >
-            {key}
-            <button
-              onClick={() => removeIgnoreKey(key)}
-              className="hover:text-error transition-colors"
-            >
-              <X size={10} />
-            </button>
-          </span>
-        ))}
-        <button
-          onClick={() => {
-            const key = prompt("Key name to ignore:");
-            if (key) addIgnoreKey(key.trim());
-          }}
-          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full border border-dashed border-chip-border text-chip-text hover:text-text-primary hover:border-border-hover transition-colors"
-        >
-          <Plus size={10} />
-          Add
-        </button>
-      </div>
+      <IgnoreKeysRow
+        keys={options.ignoreKeys}
+        onAdd={addIgnoreKey}
+        onRemove={removeIgnoreKey}
+      />
 
       {/* Result count */}
       {hasJson && (options.query || options.numericMode) && (
