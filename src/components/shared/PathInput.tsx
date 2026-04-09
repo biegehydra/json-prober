@@ -7,6 +7,7 @@ import {
   useCallback,
   useEffect,
   type KeyboardEvent,
+  type ReactNode,
 } from "react";
 import { parseBracketPath, resolvePathSegments } from "@/lib/path-resolver";
 import { CopyButton } from "./CopyButton";
@@ -18,24 +19,33 @@ interface PathInputProps {
   placeholder?: string;
 }
 
-interface OpenAccessor {
+interface OpenStringAccessor {
+  type: "string";
   completedPath: string;
   partialKey: string;
   openDelimiter: string;
   closeDelimiter: string;
-  insertStart: number;
 }
 
-const ACCESSOR_DELIMITERS = [
+interface OpenIndexAccessor {
+  type: "index";
+  completedPath: string;
+  partialIndex: string;
+}
+
+type OpenAccessor = OpenStringAccessor | OpenIndexAccessor;
+
+const STRING_DELIMITERS = [
   { open: '["', close: '"]' },
   { open: '("', close: '")' },
 ];
 
 function detectOpenAccessor(input: string): OpenAccessor | null {
-  let best: OpenAccessor | null = null;
-  let bestPos = -1;
+  // First check for open string accessor — has higher priority
+  let bestStringPos = -1;
+  let bestString: OpenStringAccessor | null = null;
 
-  for (const { open, close } of ACCESSOR_DELIMITERS) {
+  for (const { open, close } of STRING_DELIMITERS) {
     let searchFrom = input.length;
     while (searchFrom > 0) {
       const pos = input.lastIndexOf(open, searchFrom - 1);
@@ -43,14 +53,14 @@ function detectOpenAccessor(input: string): OpenAccessor | null {
 
       const afterOpen = input.substring(pos + open.length);
       if (!afterOpen.includes(close)) {
-        if (pos > bestPos) {
-          bestPos = pos;
-          best = {
+        if (pos > bestStringPos) {
+          bestStringPos = pos;
+          bestString = {
+            type: "string",
             completedPath: input.substring(0, pos),
             partialKey: afterOpen,
             openDelimiter: open,
             closeDelimiter: close,
-            insertStart: pos + open.length,
           };
         }
         break;
@@ -59,7 +69,42 @@ function detectOpenAccessor(input: string): OpenAccessor | null {
     }
   }
 
-  return best;
+  // Check for open bare bracket (index accessor): [ not followed by "
+  let bestIndexPos = -1;
+  let bestIndex: OpenIndexAccessor | null = null;
+
+  let idxSearch = input.length;
+  while (idxSearch > 0) {
+    const pos = input.lastIndexOf("[", idxSearch - 1);
+    if (pos === -1) break;
+
+    const charAfterBracket = input[pos + 1];
+    // Skip if this is a string accessor ["
+    if (charAfterBracket === '"') {
+      idxSearch = pos;
+      continue;
+    }
+
+    const afterBracket = input.substring(pos + 1);
+    if (!afterBracket.includes("]")) {
+      if (pos > bestIndexPos) {
+        bestIndexPos = pos;
+        bestIndex = {
+          type: "index",
+          completedPath: input.substring(0, pos),
+          partialIndex: afterBracket.replace(/\?/g, ""),
+        };
+      }
+      break;
+    }
+    idxSearch = pos;
+  }
+
+  // Return whichever is later in the string (more relevant)
+  if (bestString && bestIndex) {
+    return bestStringPos > bestIndexPos ? bestString : bestIndex;
+  }
+  return bestString ?? bestIndex;
 }
 
 function escapeKey(key: string, delimiter: string): string {
@@ -68,6 +113,15 @@ function escapeKey(key: string, delimiter: string): string {
     escaped = escaped.replace(/\)/g, "\\)");
   }
   return escaped;
+}
+
+interface SuggestionItem {
+  label: string;
+  insertValue: string;
+  detail?: string;
+  /** When set, wraps the value with these delimiters instead of using the accessor's own */
+  wrapOpen?: string;
+  wrapClose?: string;
 }
 
 export function PathInput({
@@ -86,38 +140,108 @@ export function PathInput({
     return detectOpenAccessor(value);
   }, [value, dismissed]);
 
-  const suggestions = useMemo(() => {
-    if (!accessor || jsonData === undefined) return [];
+  const { suggestions, header } = useMemo((): {
+    suggestions: SuggestionItem[];
+    header: ReactNode;
+  } => {
+    if (!accessor || jsonData === undefined)
+      return { suggestions: [], header: null };
 
     const segments = parseBracketPath(accessor.completedPath);
     const resolved = resolvePathSegments(jsonData, segments);
 
-    if (
-      resolved.error ||
-      resolved.value === null ||
-      resolved.value === undefined ||
-      typeof resolved.value !== "object" ||
-      Array.isArray(resolved.value)
-    ) {
-      return [];
+    if (resolved.error || resolved.value === null || resolved.value === undefined) {
+      return { suggestions: [], header: null };
     }
 
-    const keys = Object.keys(resolved.value as Record<string, unknown>);
-    const partial = accessor.partialKey.toLowerCase();
+    if (accessor.type === "string") {
+      if (typeof resolved.value !== "object" || Array.isArray(resolved.value)) {
+        return { suggestions: [], header: null };
+      }
 
+      const keys = Object.keys(resolved.value as Record<string, unknown>);
+      const partial = accessor.partialKey.toLowerCase();
+
+      const filtered = partial
+        ? keys.filter((k) => k.toLowerCase().includes(partial))
+        : keys;
+
+      filtered.sort((a, b) => {
+        if (!partial) return a.localeCompare(b);
+        const aStarts = a.toLowerCase().startsWith(partial);
+        const bStarts = b.toLowerCase().startsWith(partial);
+        if (aStarts !== bStarts) return aStarts ? -1 : 1;
+        return a.localeCompare(b);
+      });
+
+      return {
+        suggestions: filtered.slice(0, 50).map((k) => ({
+          label: k,
+          insertValue: k,
+        })),
+        header: null,
+      };
+    }
+
+    // Index accessor — but the resolved value might be an object
+    if (!Array.isArray(resolved.value)) {
+      if (typeof resolved.value === "object") {
+        const keys = Object.keys(resolved.value as Record<string, unknown>);
+        const partial = accessor.partialIndex.toLowerCase();
+        const filtered = partial
+          ? keys.filter((k) => k.toLowerCase().includes(partial))
+          : keys;
+        filtered.sort((a, b) => a.localeCompare(b));
+
+        return {
+          suggestions: filtered.slice(0, 50).map((k) => ({
+            label: k,
+            insertValue: k,
+            wrapOpen: '["',
+            wrapClose: '"]',
+          })),
+          header: (
+            <span>
+              Object — select a key
+            </span>
+          ),
+        };
+      }
+      return { suggestions: [], header: null };
+    }
+
+    const arr = resolved.value as unknown[];
+    const partial = accessor.partialIndex.trim();
+
+    const indices = Array.from({ length: arr.length }, (_, i) => String(i));
     const filtered = partial
-      ? keys.filter((k) => k.toLowerCase().includes(partial))
-      : keys;
+      ? indices.filter((idx) => idx.startsWith(partial))
+      : indices;
 
-    filtered.sort((a, b) => {
-      if (!partial) return a.localeCompare(b);
-      const aStarts = a.toLowerCase().startsWith(partial);
-      const bStarts = b.toLowerCase().startsWith(partial);
-      if (aStarts !== bStarts) return aStarts ? -1 : 1;
-      return a.localeCompare(b);
-    });
-
-    return filtered.slice(0, 50);
+    return {
+      suggestions: filtered.slice(0, 50).map((idx) => {
+        const item = arr[Number(idx)];
+        let detail: string | undefined;
+        if (item === null) detail = "null";
+        else if (Array.isArray(item)) detail = `array (${item.length})`;
+        else if (typeof item === "object") {
+          const keys = Object.keys(item as Record<string, unknown>);
+          detail = `{${keys.slice(0, 3).join(", ")}${keys.length > 3 ? ", …" : ""}}`;
+        } else {
+          const s = JSON.stringify(item);
+          detail = s.length > 40 ? s.slice(0, 40) + "…" : s;
+        }
+        return { label: idx, insertValue: idx, detail };
+      }),
+      header: (
+        <span>
+          Array with <strong>{arr.length}</strong> item{arr.length !== 1 ? "s" : ""}{" "}
+          <span className="text-text-muted">
+            — valid indices: 0–{arr.length - 1}
+          </span>
+        </span>
+      ),
+    };
   }, [accessor, jsonData]);
 
   useEffect(() => {
@@ -134,14 +258,25 @@ export function PathInput({
   }, [selectedIndex]);
 
   const selectSuggestion = useCallback(
-    (key: string) => {
+    (item: SuggestionItem) => {
       if (!accessor) return;
-      const escaped = escapeKey(key, accessor.openDelimiter);
-      const newValue =
-        accessor.completedPath +
-        accessor.openDelimiter +
-        escaped +
-        accessor.closeDelimiter;
+
+      let newValue: string;
+      if (item.wrapOpen !== undefined && item.wrapClose !== undefined) {
+        const escaped = escapeKey(item.insertValue, item.wrapOpen);
+        newValue =
+          accessor.completedPath + item.wrapOpen + escaped + item.wrapClose;
+      } else if (accessor.type === "string") {
+        const escaped = escapeKey(item.insertValue, accessor.openDelimiter);
+        newValue =
+          accessor.completedPath +
+          accessor.openDelimiter +
+          escaped +
+          accessor.closeDelimiter;
+      } else {
+        newValue = accessor.completedPath + "[" + item.insertValue + "]";
+      }
+
       onChange(newValue);
       setDismissed(false);
       requestAnimationFrame(() => inputRef.current?.focus());
@@ -177,7 +312,7 @@ export function PathInput({
     [suggestions, selectedIndex, selectSuggestion]
   );
 
-  const showDropdown = suggestions.length > 0;
+  const showDropdown = suggestions.length > 0 || header;
 
   return (
     <div className="flex gap-2 relative">
@@ -197,29 +332,48 @@ export function PathInput({
         {showDropdown && (
           <div
             ref={listRef}
-            className="absolute left-0 right-0 top-full mt-1 z-30 max-h-64 overflow-auto rounded-lg border border-border bg-surface shadow-xl shadow-black/40"
+            className="absolute left-0 right-0 top-full mt-1 z-30 max-h-72 overflow-auto rounded-lg border border-border bg-surface shadow-xl shadow-black/40"
           >
-            {suggestions.map((key, i) => {
+            {header && (
+              <div className="px-3 py-2 text-xs text-text-secondary border-b border-border bg-surface-hover">
+                {header}
+              </div>
+            )}
+            {suggestions.map((item, i) => {
               const isActive = i === selectedIndex;
               return (
                 <button
-                  key={key}
+                  key={item.label}
                   data-active={isActive ? "" : undefined}
                   onMouseDown={(e) => {
                     e.preventDefault();
-                    selectSuggestion(key);
+                    selectSuggestion(item);
                   }}
                   onMouseEnter={() => setSelectedIndex(i)}
-                  className={`w-full text-left px-3 py-1.5 text-sm font-mono truncate transition-colors ${
+                  className={`w-full text-left px-3 py-1.5 flex items-center gap-3 transition-colors ${
                     isActive
                       ? "bg-accent/20 text-text-primary"
                       : "text-text-secondary hover:bg-surface-hover"
                   }`}
                 >
-                  {accessor?.partialKey ? highlightMatch(key, accessor.partialKey) : key}
+                  <span className="text-sm font-mono truncate shrink-0">
+                    {accessor?.type === "string" && accessor.partialKey
+                      ? highlightMatch(item.label, accessor.partialKey)
+                      : item.label}
+                  </span>
+                  {item.detail && (
+                    <span className="text-xs text-text-muted truncate">
+                      {item.detail}
+                    </span>
+                  )}
                 </button>
               );
             })}
+            {suggestions.length === 0 && header && accessor?.type === "index" && (
+              <div className="px-3 py-2 text-xs text-text-muted">
+                Type an index number…
+              </div>
+            )}
           </div>
         )}
       </div>
