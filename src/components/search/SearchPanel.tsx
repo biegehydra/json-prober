@@ -3,6 +3,7 @@
 import { useCallback, useState, useRef, useEffect } from "react";
 import { Search, X, Plus } from "lucide-react";
 import { Chip } from "@/components/ui/Chip";
+import { useDebounce } from "@/hooks/useDebounce";
 import type {
   SearchOptions,
   SearchMode,
@@ -156,6 +157,25 @@ export function SearchPanel({
   resultCount,
   hasJson,
 }: SearchPanelProps) {
+  const [localQuery, setLocalQuery] = useState(options.query);
+  const [prevExternalQuery, setPrevExternalQuery] = useState(options.query);
+
+  if (prevExternalQuery !== options.query) {
+    setPrevExternalQuery(options.query);
+    if (options.query !== localQuery) {
+      setLocalQuery(options.query);
+    }
+  }
+
+  const debouncedQuery = useDebounce(localQuery, 250);
+  const prevDebouncedRef = useRef(debouncedQuery);
+  useEffect(() => {
+    if (prevDebouncedRef.current !== debouncedQuery) {
+      prevDebouncedRef.current = debouncedQuery;
+      onChange({ ...options, query: debouncedQuery });
+    }
+  }, [debouncedQuery, options, onChange]);
+
   const update = useCallback(
     (partial: Partial<SearchOptions>) => {
       onChange({ ...options, ...partial });
@@ -192,8 +212,8 @@ export function SearchPanel({
         />
         <input
           type="text"
-          value={options.numericMode ? "" : options.query}
-          onChange={(e) => update({ query: e.target.value })}
+          value={options.numericMode ? "" : localQuery}
+          onChange={(e) => setLocalQuery(e.target.value)}
           placeholder={
             hasJson
               ? options.mode === "key"
@@ -206,10 +226,10 @@ export function SearchPanel({
           disabled={!hasJson || options.numericMode}
           className="w-full pl-9 pr-3 py-2 text-sm bg-input border border-border rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-focus transition-colors disabled:opacity-40"
         />
-        {options.query && !options.numericMode && (
+        {localQuery && !options.numericMode && (
           <button
             type="button"
-            onClick={() => update({ query: "" })}
+            onClick={() => { setLocalQuery(""); update({ query: "" }); }}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-text-muted hover:text-text-primary"
           >
             <X size={14} />

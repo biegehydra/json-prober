@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import { CopyButton } from "../shared/CopyButton";
+import { JsonView } from "../shared/JsonView";
 import type { SearchResult } from "@/lib/search/types";
 import type { Serializer } from "@/lib/serializers/types";
 
@@ -20,11 +21,7 @@ function truncatePreview(value: unknown, maxLen = 120): string {
   return str.slice(0, maxLen) + "...";
 }
 
-const PREVIEW_THRESHOLD = 300;
-
 function ValuePreview({ value }: { value: unknown }) {
-  const [showFull, setShowFull] = useState(false);
-
   const full = useMemo(() => {
     try {
       return JSON.stringify(value, null, 2);
@@ -33,36 +30,16 @@ function ValuePreview({ value }: { value: unknown }) {
     }
   }, [value]);
 
-  const isLong = full.length > PREVIEW_THRESHOLD;
-  const displayed = showFull || !isLong ? full : full.slice(0, PREVIEW_THRESHOLD) + "\n…";
-
   return (
-    <div className="flex flex-col gap-1.5">
+    <div onClick={(e) => e.stopPropagation()}>
       <div className="relative">
-        <pre className={`text-xs font-mono text-text-secondary whitespace-pre-wrap break-all p-2 bg-base rounded border border-border overflow-auto ${showFull ? "max-h-[70vh]" : "max-h-48"}`}>
-          {displayed}
-        </pre>
-        <div className="absolute top-1.5 right-1.5">
+        <div className="absolute top-1.5 right-3 z-10">
           <CopyButton text={full} size={12} />
         </div>
+        <JsonView value={full} scrollable={false} />
       </div>
-      {isLong && (
-        <button
-          onClick={() => setShowFull(!showFull)}
-          className="self-start text-[11px] text-accent hover:text-accent-hover transition-colors"
-        >
-          {showFull ? "Collapse" : `Show full value (${formatBytes(full.length)})`}
-        </button>
-      )}
     </div>
   );
-}
-
-function formatBytes(len: number): string {
-  if (len < 1024) return `${len} chars`;
-  const kb = len / 1024;
-  if (kb < 1024) return `${kb.toFixed(1)} KB`;
-  return `${(kb / 1024).toFixed(1)} MB`;
 }
 
 export function ResultCard({

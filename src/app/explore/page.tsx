@@ -3,11 +3,8 @@
 import { useState, useMemo, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, AlertCircle } from "lucide-react";
-import CodeMirror from "@uiw/react-codemirror";
-import { json } from "@codemirror/lang-json";
-import { oneDark } from "@codemirror/theme-one-dark";
-import { EditorState } from "@codemirror/state";
 import { CopyButton } from "@/components/shared/CopyButton";
+import { JsonView } from "@/components/shared/JsonView";
 import { PathInput } from "@/components/shared/PathInput";
 import { SerializerSelect } from "@/components/serializer/SerializerSelect";
 import { parseJson } from "@/lib/parser";
@@ -150,24 +147,7 @@ function ExploreContent() {
                 <CopyButton text={beautified} />
               </div>
             )}
-            <div className="h-full overflow-auto">
-              <CodeMirror
-                value={beautified}
-                extensions={[
-                  json(),
-                  EditorState.readOnly.of(true),
-                ]}
-                theme={oneDark}
-                basicSetup={{
-                  lineNumbers: true,
-                  foldGutter: true,
-                  highlightActiveLine: false,
-                  bracketMatching: true,
-                  autocompletion: false,
-                }}
-                readOnly
-              />
-            </div>
+            <JsonView value={beautified} maxHeight="none" />
           </div>
         </div>
       )}

@@ -15,7 +15,6 @@ import type { SearchOptions } from "@/lib/search/types";
 import { registerAllPresets } from "@/lib/serializers/presets";
 import { getAllSerializers, getSerializer } from "@/lib/serializers/registry";
 import { useSerializerStore } from "@/stores/serializer";
-import { useDebounce } from "@/hooks/useDebounce";
 
 registerAllPresets();
 
@@ -38,12 +37,6 @@ export default function Home() {
 
   const parseResult = useMemo(() => parseJson(jsonInput), [jsonInput]);
 
-  const debouncedQuery = useDebounce(searchOptions.query, 300);
-  const debouncedSearchOptions = useMemo(
-    () => ({ ...searchOptions, query: debouncedQuery }),
-    [searchOptions, debouncedQuery]
-  );
-
   const openRootInExplorer = useCallback(() => {
     try {
       localStorage.setItem("jsonprober-explore-data", jsonInput);
@@ -56,9 +49,9 @@ export default function Home() {
 
   const searchResults = useMemo(() => {
     if (!parseResult.success || !parseResult.data) return [];
-    if (!debouncedSearchOptions.query && !debouncedSearchOptions.numericMode) return [];
-    return searchJson(parseResult.data, debouncedSearchOptions);
-  }, [parseResult, debouncedSearchOptions]);
+    if (!searchOptions.query && !searchOptions.numericMode) return [];
+    return searchJson(parseResult.data, searchOptions);
+  }, [parseResult, searchOptions]);
 
   const leftPanel = (
     <JsonEditor
@@ -146,7 +139,7 @@ export default function Home() {
         )}
 
         {parseResult.success &&
-          (debouncedSearchOptions.query || debouncedSearchOptions.numericMode) &&
+          (searchOptions.query || searchOptions.numericMode) &&
           searchResults.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center gap-2 py-12">
               <p className="text-sm text-text-secondary">No matches found</p>
