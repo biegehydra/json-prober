@@ -18,7 +18,7 @@ Click any result to open it in the path explorer, or open the full JSON from the
 
 Switching languages in the explorer re-translates your current path into the new format automatically.
 
-<!-- TODO: Add screenshot of the path explorer page -->
+![JSON Prober Path Explorer](content/explorer.gif)
 
 ## Features
 
