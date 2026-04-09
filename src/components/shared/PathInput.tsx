@@ -239,6 +239,7 @@ export function PathInput({
 }: PathInputProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [dismissed, setDismissed] = useState(false);
+  const justSelectedRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -341,6 +342,11 @@ export function PathInput({
           rawInsert: "." + transformed,
           ambiguous: isAmbiguous,
         });
+      }
+
+      // If the partial exactly matches a single key, the user has finished typing -- hide autocomplete
+      if (partial && items.length === 1 && items[0].label.toLowerCase() === partial) {
+        return { suggestions: [], header: null };
       }
 
       items.sort((a, b) => {
@@ -462,6 +468,10 @@ export function PathInput({
   }, [suggestions]);
 
   useEffect(() => {
+    if (justSelectedRef.current) {
+      justSelectedRef.current = false;
+      return;
+    }
     setDismissed(false);
   }, [value]);
 
@@ -497,8 +507,9 @@ export function PathInput({
         newValue = accessor.completedPath + "[" + item.insertValue + "]";
       }
 
+      justSelectedRef.current = true;
       onChange(newValue);
-      setDismissed(false);
+      setDismissed(true);
       requestAnimationFrame(() => inputRef.current?.focus());
     },
     [accessor, onChange, accessorDef]
@@ -519,10 +530,11 @@ export function PathInput({
           break;
         case "Tab":
         case "Enter":
+          e.preventDefault();
           if (suggestions.length > 0 && !suggestions[selectedIndex]?.ambiguous) {
-            e.preventDefault();
             selectSuggestion(suggestions[selectedIndex]);
           }
+          setDismissed(true);
           break;
         case "Escape":
           setDismissed(true);
@@ -551,6 +563,7 @@ export function PathInput({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
+          onBlur={() => setDismissed(true)}
           placeholder={placeholder}
           spellCheck={false}
           autoComplete="off"
