@@ -8,6 +8,7 @@ import { json } from "@codemirror/lang-json";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { EditorState } from "@codemirror/state";
 import { CopyButton } from "@/components/shared/CopyButton";
+import { PathInput } from "@/components/shared/PathInput";
 import { parseJson } from "@/lib/parser";
 import { parseBracketPath, resolvePathSegments } from "@/lib/path-resolver";
 
@@ -85,20 +86,15 @@ function ExploreContent() {
         <div className="flex-1 min-h-0 flex flex-col">
           {/* Path input bar */}
           <div className="shrink-0 p-4 border-b border-border bg-panel">
-            <label className="block text-xs text-text-muted mb-1.5">
+            <label className="block text-xs text-text-secondary mb-1.5">
               Accessor path (edit to navigate)
             </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={pathInput}
-                onChange={(e) => handlePathChange(e.target.value)}
-                placeholder='e.g. root["data"]["sections"][0]'
-                spellCheck={false}
-                className="flex-1 px-3 py-2 text-sm font-mono bg-input border border-border rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-focus transition-colors"
-              />
-              <CopyButton text={pathInput} />
-            </div>
+            <PathInput
+              value={pathInput}
+              onChange={handlePathChange}
+              jsonData={jsonData}
+              placeholder='e.g. root["data"]["sections"][0]'
+            />
             {resolved.error && (
               <p className="mt-2 text-xs text-error flex items-center gap-1.5">
                 <AlertCircle size={12} />
