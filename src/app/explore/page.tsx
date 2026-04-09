@@ -1,0 +1,152 @@
+"use client";
+
+import { useState, useMemo, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { ArrowLeft, AlertCircle } from "lucide-react";
+import CodeMirror from "@uiw/react-codemirror";
+import { json } from "@codemirror/lang-json";
+import { oneDark } from "@codemirror/theme-one-dark";
+import { EditorState } from "@codemirror/state";
+import { CopyButton } from "@/components/shared/CopyButton";
+import { parseJson } from "@/lib/parser";
+import { parseBracketPath, resolvePathSegments } from "@/lib/path-resolver";
+
+function ExploreContent() {
+  const searchParams = useSearchParams();
+  const initialPath = searchParams.get("path") ?? "";
+
+  const [pathInput, setPathInput] = useState(initialPath);
+  const [jsonData, setJsonData] = useState<unknown>(undefined);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("jsondig-explore-data");
+      if (!raw) {
+        setLoadError("No JSON data found. Go back to the main page and open a result.");
+        return;
+      }
+      const parsed = parseJson(raw);
+      if (!parsed.success || parsed.data === undefined) {
+        setLoadError("Failed to parse stored JSON data.");
+        return;
+      }
+      setJsonData(parsed.data);
+    } catch {
+      setLoadError("Failed to read JSON data from storage.");
+    }
+  }, []);
+
+  const resolved = useMemo(() => {
+    if (jsonData === undefined) return { value: undefined, error: undefined };
+    if (!pathInput.trim()) return { value: jsonData, error: undefined };
+    const segments = parseBracketPath(pathInput);
+    if (segments.length === 0) return { value: jsonData, error: undefined };
+    return resolvePathSegments(jsonData, segments);
+  }, [jsonData, pathInput]);
+
+  const beautified = useMemo(() => {
+    if (resolved.value === undefined && resolved.error) return "";
+    try {
+      return JSON.stringify(resolved.value, null, 2) ?? "undefined";
+    } catch {
+      return String(resolved.value);
+    }
+  }, [resolved]);
+
+  const handlePathChange = useCallback((value: string) => {
+    setPathInput(value);
+  }, []);
+
+  return (
+    <div className="flex flex-col h-full">
+      <header className="shrink-0 flex items-center gap-3 px-4 py-2.5 border-b border-border bg-panel">
+        <a
+          href="/"
+          className="inline-flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors"
+        >
+          <ArrowLeft size={14} />
+          Back
+        </a>
+        <div className="h-4 w-px bg-border" />
+        <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">
+          Path Explorer
+        </span>
+      </header>
+
+      {loadError ? (
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="flex items-center gap-3 text-sm text-error">
+            <AlertCircle size={18} />
+            {loadError}
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 flex flex-col">
+          {/* Path input bar */}
+          <div className="shrink-0 p-4 border-b border-border bg-panel">
+            <label className="block text-xs text-text-muted mb-1.5">
+              Accessor path (edit to navigate)
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={pathInput}
+                onChange={(e) => handlePathChange(e.target.value)}
+                placeholder='e.g. root["data"]["sections"][0]'
+                spellCheck={false}
+                className="flex-1 px-3 py-2 text-sm font-mono bg-input border border-border rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-focus transition-colors"
+              />
+              <CopyButton text={pathInput} />
+            </div>
+            {resolved.error && (
+              <p className="mt-2 text-xs text-error flex items-center gap-1.5">
+                <AlertCircle size={12} />
+                {resolved.error}
+              </p>
+            )}
+          </div>
+
+          {/* Beautified JSON output */}
+          <div className="flex-1 min-h-0 relative">
+            {beautified && (
+              <div className="absolute top-2 right-4 z-10">
+                <CopyButton text={beautified} />
+              </div>
+            )}
+            <CodeMirror
+              value={beautified}
+              extensions={[
+                json(),
+                EditorState.readOnly.of(true),
+              ]}
+              theme={oneDark}
+              basicSetup={{
+                lineNumbers: true,
+                foldGutter: true,
+                highlightActiveLine: false,
+                bracketMatching: true,
+                autocompletion: false,
+              }}
+              readOnly
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function ExplorePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-full text-sm text-text-muted">
+          Loading...
+        </div>
+      }
+    >
+      <ExploreContent />
+    </Suspense>
+  );
+}

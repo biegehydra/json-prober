@@ -145,6 +145,7 @@ export default function Home() {
                 results={searchResults}
                 serializer={currentSerializer}
                 serializerOptions={serializerOptions}
+                jsonInput={jsonInput}
               />
             )}
 

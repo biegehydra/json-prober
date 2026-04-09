@@ -10,12 +10,14 @@ interface ResultsListProps {
   results: SearchResult[];
   serializer: Serializer;
   serializerOptions: Record<string, unknown>;
+  jsonInput: string;
 }
 
 export function ResultsList({
   results,
   serializer,
   serializerOptions,
+  jsonInput,
 }: ResultsListProps) {
   const allSerialized = useMemo(
     () =>
@@ -54,6 +56,7 @@ export function ResultsList({
             serializer={serializer}
             serializerOptions={serializerOptions}
             index={i}
+            jsonInput={jsonInput}
           />
         ))}
       </div>

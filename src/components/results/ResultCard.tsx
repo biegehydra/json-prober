@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
+import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import { CopyButton } from "../shared/CopyButton";
 import type { SearchResult } from "@/lib/search/types";
 import type { Serializer } from "@/lib/serializers/types";
@@ -11,6 +11,7 @@ interface ResultCardProps {
   serializer: Serializer;
   serializerOptions: Record<string, unknown>;
   index: number;
+  jsonInput: string;
 }
 
 function truncatePreview(value: unknown, maxLen = 120): string {
@@ -19,8 +20,12 @@ function truncatePreview(value: unknown, maxLen = 120): string {
   return str.slice(0, maxLen) + "...";
 }
 
+const PREVIEW_THRESHOLD = 300;
+
 function ValuePreview({ value }: { value: unknown }) {
-  const preview = useMemo(() => {
+  const [showFull, setShowFull] = useState(false);
+
+  const full = useMemo(() => {
     try {
       return JSON.stringify(value, null, 2);
     } catch {
@@ -28,13 +33,36 @@ function ValuePreview({ value }: { value: unknown }) {
     }
   }, [value]);
 
-  const isLong = preview.length > 200;
+  const isLong = full.length > PREVIEW_THRESHOLD;
+  const displayed = showFull || !isLong ? full : full.slice(0, PREVIEW_THRESHOLD) + "\n…";
 
   return (
-    <pre className="text-xs font-mono text-text-secondary whitespace-pre-wrap break-all p-2 bg-base rounded border border-border max-h-48 overflow-auto">
-      {isLong ? preview.slice(0, 500) + "\n..." : preview}
-    </pre>
+    <div className="flex flex-col gap-1.5">
+      <div className="relative">
+        <pre className={`text-xs font-mono text-text-secondary whitespace-pre-wrap break-all p-2 bg-base rounded border border-border overflow-auto ${showFull ? "max-h-[70vh]" : "max-h-48"}`}>
+          {displayed}
+        </pre>
+        <div className="absolute top-1.5 right-1.5">
+          <CopyButton text={full} size={12} />
+        </div>
+      </div>
+      {isLong && (
+        <button
+          onClick={() => setShowFull(!showFull)}
+          className="self-start text-[11px] text-accent hover:text-accent-hover transition-colors"
+        >
+          {showFull ? "Collapse" : `Show full value (${formatBytes(full.length)})`}
+        </button>
+      )}
+    </div>
   );
+}
+
+function formatBytes(len: number): string {
+  if (len < 1024) return `${len} chars`;
+  const kb = len / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
 }
 
 export function ResultCard({
@@ -42,6 +70,7 @@ export function ResultCard({
   serializer,
   serializerOptions,
   index,
+  jsonInput,
 }: ResultCardProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -49,6 +78,21 @@ export function ResultCard({
     () => serializer.serialize(result.path, serializerOptions),
     [serializer, result.path, serializerOptions]
   );
+
+  const parentPath = useMemo(() => {
+    if (result.path.length <= 1) return serialized;
+    return serializer.serialize(result.path.slice(0, -1), serializerOptions);
+  }, [serializer, result.path, serializerOptions, serialized]);
+
+  const openInExplorer = useCallback(() => {
+    try {
+      localStorage.setItem("jsondig-explore-data", jsonInput);
+    } catch {
+      // quota exceeded — unlikely for <20MB
+    }
+    const encoded = encodeURIComponent(parentPath);
+    window.open(`/explore?path=${encoded}`, "_blank");
+  }, [jsonInput, parentPath]);
 
   const matchLabel = result.matchedOn === "key" ? "Key" : "Value";
   const matchDisplay =
@@ -96,7 +140,16 @@ export function ResultCard({
           )}
         </div>
 
-        <CopyButton text={serialized} className="shrink-0 opacity-0 group-hover:opacity-100" />
+        <div className="shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
+          <button
+            onClick={openInExplorer}
+            className="inline-flex items-center justify-center rounded p-1.5 text-text-muted hover:text-text-secondary hover:bg-surface-hover transition-colors"
+            title="Explore parent in new tab"
+          >
+            <ExternalLink size={14} />
+          </button>
+          <CopyButton text={serialized} />
+        </div>
       </div>
 
       {expanded && result.resolvedValue !== undefined && (
