@@ -101,7 +101,7 @@ export function ResultCard({
       : truncatePreview(result.matchedValue, 80);
 
   return (
-    <div className="border border-border rounded-lg bg-surface hover:bg-surface-hover transition-colors group">
+    <div className="border border-border rounded-lg bg-surface hover:bg-surface-hover transition-colors">
       <div className="flex items-start gap-2 px-3 py-2.5">
         <button
           onClick={() => setExpanded(!expanded)}
@@ -140,7 +140,7 @@ export function ResultCard({
           )}
         </div>
 
-        <div className="shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
+        <div className="shrink-0 flex items-center gap-0.5">
           <button
             onClick={openInExplorer}
             className="inline-flex items-center justify-center rounded p-1.5 text-text-muted hover:text-text-primary hover:bg-surface-hover transition-colors"
