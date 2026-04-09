@@ -86,7 +86,7 @@ export function ResultCard({
 
   const openInExplorer = useCallback(() => {
     try {
-      localStorage.setItem("jsondig-explore-data", jsonInput);
+      localStorage.setItem("jsonprober-explore-data", jsonInput);
     } catch {
       // quota exceeded — unlikely for <20MB
     }

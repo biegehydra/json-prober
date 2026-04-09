@@ -16,6 +16,6 @@ export const useSerializerStore = create<SerializerState>()(
       setSerializerId: (id) => set({ serializerId: id, serializerOptions: {} }),
       setSerializerOptions: (opts) => set({ serializerOptions: opts }),
     }),
-    { name: "jsondig-serializer-store" }
+    { name: "jsonprober-serializer-store" }
   )
 );

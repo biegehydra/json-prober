@@ -52,7 +52,7 @@ function ExploreContent() {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("jsondig-explore-data");
+      const raw = localStorage.getItem("jsonprober-explore-data");
       if (!raw) {
         setLoadError("No JSON data found. Go back to the main page and open a result.");
         return;

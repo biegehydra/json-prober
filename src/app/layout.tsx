@@ -13,9 +13,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "JSONdig — Search JSON, Get Code",
+  title: "JSON Prober — Search JSON, Generate Accessor Code",
   description:
-    "Paste JSON, search by key or value, get copy-paste-ready accessor code for C#, JavaScript, Python, and more.",
+    "Paste JSON, search by key or value, and get copy-paste-ready accessor code for C#, Python, JavaScript, Java, Go, and more. Free online JSON path finder and code generator.",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
