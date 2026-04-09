@@ -8,7 +8,7 @@ A free online tool for searching through JSON data and generating copy-paste-rea
 
 I built this tool primarily to deal with the tedious processes I face when scraping a website. You find a large json payload that has a bunch of data you need, but the JSON is an abomination to mankind that has 10 levels of nesting, duplicate data everywhere, and nonsensical property names. 
 
-I ultimately just need the code to acess the data I need. There are existing tools to find the values or properties I need and there path, but then I have to go through the tedious process of converting each path to the necessary code needed to access that data. This can get annoying, fast. This tool aims to solve that
+You ultimately just need the code to acess the data you need. There are existing tools to find the values or properties you need and their path, but then you have to go through the mind-numbing process of converting each path to the necessary code needed to access the data. This can get annoying, fast. This tool aims to solve that
 
 ## Search
 
