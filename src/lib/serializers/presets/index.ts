@@ -1,8 +1,9 @@
 import { registerSerializer } from "../registry";
-import { csharpNewtonsoftSerializer } from "./csharp-newtonsoft";
-import { csharpStjSerializer } from "./csharp-stj";
+import { createSerializer } from "../serialize";
+import { csharpNewtonsoftDef } from "./csharp-newtonsoft";
+import { csharpStjDef } from "./csharp-stj";
 
 export function registerAllPresets(): void {
-  registerSerializer(csharpNewtonsoftSerializer);
-  registerSerializer(csharpStjSerializer);
+  registerSerializer(createSerializer(csharpNewtonsoftDef));
+  registerSerializer(createSerializer(csharpStjDef));
 }

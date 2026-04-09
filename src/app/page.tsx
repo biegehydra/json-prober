@@ -50,12 +50,18 @@ export default function Home() {
   const openRootInExplorer = useCallback(() => {
     try {
       localStorage.setItem("jsondig-explore-data", jsonInput);
+      if (currentSerializer) {
+        localStorage.setItem(
+          "jsondig-explore-def",
+          JSON.stringify(currentSerializer.definition)
+        );
+      }
     } catch {
       // quota exceeded
     }
     const rootVar = (serializerOptions.rootVar as string) || "root";
     window.open(`/explore?path=${encodeURIComponent(rootVar)}`, "_blank");
-  }, [jsonInput, serializerOptions]);
+  }, [jsonInput, serializerOptions, currentSerializer]);
 
   const searchResults = useMemo(() => {
     if (!parseResult.success || !parseResult.data) return [];

@@ -1,5 +1,25 @@
 import type { PathSegment } from "../types";
 
+// --- Access patterns ---
+
+export interface IndexerAccess {
+  type: "indexer";
+  /** Template with {value} placeholder, e.g. '["{value}"]' or '[{value}]' */
+  template: string;
+}
+
+export interface MethodAccess {
+  type: "method";
+  /** The method/function name, e.g. "GetProperty" */
+  methodName: string;
+  /** Full template with {value} placeholder, e.g. '.GetProperty("{value}")' */
+  template: string;
+}
+
+export type KeyAccess = IndexerAccess | MethodAccess;
+
+// --- Serializer option (user-configurable toggle/input) ---
+
 export interface SerializerOption {
   id: string;
   label: string;
@@ -7,18 +27,31 @@ export interface SerializerOption {
   default: unknown;
 }
 
-export interface SerializerConfig {
+// --- Accessor definition: one per language/library ---
+
+export interface AccessorDefinition {
   id: string;
   label: string;
   language: string;
   description: string;
+
+  keyAccess: KeyAccess;
+  indexAccess: IndexerAccess;
+
+  stringQuote: '"' | "'" | "`";
+  escapeRules: { char: string; replacement: string }[];
+
+  nullSafe?: {
+    keyAccess: KeyAccess;
+    indexAccess: IndexerAccess;
+  };
+
   options: SerializerOption[];
 }
 
+// --- Serializer: wraps a definition + generic serialize ---
+
 export interface Serializer {
-  config: SerializerConfig;
-  serialize(
-    path: PathSegment[],
-    options: Record<string, unknown>
-  ): string;
+  definition: AccessorDefinition;
+  serialize(path: PathSegment[], options: Record<string, unknown>): string;
 }

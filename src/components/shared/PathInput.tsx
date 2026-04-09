@@ -11,13 +11,45 @@ import {
 } from "react";
 import { parseBracketPath, resolvePathSegments } from "@/lib/path-resolver";
 import { CopyButton } from "./CopyButton";
+import type { AccessorDefinition } from "@/lib/serializers/types";
 
 interface PathInputProps {
   value: string;
   onChange: (value: string) => void;
   jsonData: unknown;
   placeholder?: string;
+  accessorDef?: AccessorDefinition;
 }
+
+// --- Delimiter extraction from AccessorDefinition ---
+
+interface StringDelimiter {
+  open: string;
+  close: string;
+}
+
+function extractDelimitersFromTemplate(template: string): StringDelimiter {
+  const idx = template.indexOf("{value}");
+  return {
+    open: template.substring(0, idx),
+    close: template.substring(idx + "{value}".length),
+  };
+}
+
+function getStringDelimiters(def: AccessorDefinition): StringDelimiter[] {
+  const delims: StringDelimiter[] = [];
+  delims.push(extractDelimitersFromTemplate(def.keyAccess.template));
+  if (def.nullSafe) {
+    delims.push(extractDelimitersFromTemplate(def.nullSafe.keyAccess.template));
+  }
+  return delims;
+}
+
+function getKeyInsertDelimiters(def: AccessorDefinition): StringDelimiter {
+  return extractDelimitersFromTemplate(def.keyAccess.template);
+}
+
+// --- Open accessor detection ---
 
 interface OpenStringAccessor {
   type: "string";
@@ -33,19 +65,26 @@ interface OpenIndexAccessor {
   partialIndex: string;
 }
 
-type OpenAccessor = OpenStringAccessor | OpenIndexAccessor;
+interface OpenMethodAccessor {
+  type: "method";
+  completedPath: string;
+  partialMethod: string;
+  dotPos: number;
+}
 
-const STRING_DELIMITERS = [
-  { open: '["', close: '"]' },
-  { open: '("', close: '")' },
-];
+type OpenAccessor = OpenStringAccessor | OpenIndexAccessor | OpenMethodAccessor;
 
-function detectOpenAccessor(input: string): OpenAccessor | null {
-  // First check for open string accessor — has higher priority
+function detectOpenAccessor(
+  input: string,
+  def: AccessorDefinition | undefined
+): OpenAccessor | null {
+  const stringDelims = def ? getStringDelimiters(def) : [{ open: '["', close: '"]' }];
+
+  // 1. Check for open string accessor
   let bestStringPos = -1;
   let bestString: OpenStringAccessor | null = null;
 
-  for (const { open, close } of STRING_DELIMITERS) {
+  for (const { open, close } of stringDelims) {
     let searchFrom = input.length;
     while (searchFrom > 0) {
       const pos = input.lastIndexOf(open, searchFrom - 1);
@@ -69,18 +108,18 @@ function detectOpenAccessor(input: string): OpenAccessor | null {
     }
   }
 
-  // Check for open bare bracket (index accessor): [ not followed by "
+  // 2. Check for open bare bracket (index accessor)
   let bestIndexPos = -1;
   let bestIndex: OpenIndexAccessor | null = null;
 
+  const quote = def?.stringQuote ?? '"';
   let idxSearch = input.length;
   while (idxSearch > 0) {
     const pos = input.lastIndexOf("[", idxSearch - 1);
     if (pos === -1) break;
 
     const charAfterBracket = input[pos + 1];
-    // Skip if this is a string accessor ["
-    if (charAfterBracket === '"') {
+    if (charAfterBracket === quote) {
       idxSearch = pos;
       continue;
     }
@@ -100,17 +139,48 @@ function detectOpenAccessor(input: string): OpenAccessor | null {
     idxSearch = pos;
   }
 
-  // Return whichever is later in the string (more relevant)
-  if (bestString && bestIndex) {
-    return bestStringPos > bestIndexPos ? bestString : bestIndex;
+  // 3. Check for dot-method accessor (only if keyAccess is method-based)
+  let bestMethodPos = -1;
+  let bestMethod: OpenMethodAccessor | null = null;
+
+  if (def?.keyAccess.type === "method") {
+    const dotPos = input.lastIndexOf(".");
+    if (dotPos !== -1) {
+      const afterDot = input.substring(dotPos + 1);
+      if (!afterDot.includes("(") && !afterDot.includes("[")) {
+        const partial = afterDot.toLowerCase();
+        const methodName = def.keyAccess.methodName;
+        if (methodName.toLowerCase().startsWith(partial) || afterDot === "") {
+          bestMethodPos = dotPos;
+          bestMethod = {
+            type: "method",
+            completedPath: input.substring(0, dotPos),
+            partialMethod: afterDot,
+            dotPos,
+          };
+        }
+      }
+    }
   }
-  return bestString ?? bestIndex;
+
+  // Return whichever is latest in the string
+  const candidates: [number, OpenAccessor][] = [];
+  if (bestString) candidates.push([bestStringPos, bestString]);
+  if (bestIndex) candidates.push([bestIndexPos, bestIndex]);
+  if (bestMethod) candidates.push([bestMethodPos, bestMethod]);
+
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => b[0] - a[0]);
+  return candidates[0][1];
 }
 
-function escapeKey(key: string, delimiter: string): string {
-  let escaped = key.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-  if (delimiter === '("') {
-    escaped = escaped.replace(/\)/g, "\\)");
+function escapeKeyForDelimiter(
+  key: string,
+  rules: { char: string; replacement: string }[]
+): string {
+  let escaped = key;
+  for (const rule of rules) {
+    escaped = escaped.replaceAll(rule.char, rule.replacement);
   }
   return escaped;
 }
@@ -119,9 +189,9 @@ interface SuggestionItem {
   label: string;
   insertValue: string;
   detail?: string;
-  /** When set, wraps the value with these delimiters instead of using the accessor's own */
   wrapOpen?: string;
   wrapClose?: string;
+  rawInsert?: string;
 }
 
 export function PathInput({
@@ -129,6 +199,7 @@ export function PathInput({
   onChange,
   jsonData,
   placeholder,
+  accessorDef,
 }: PathInputProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [dismissed, setDismissed] = useState(false);
@@ -137,8 +208,8 @@ export function PathInput({
 
   const accessor = useMemo(() => {
     if (dismissed) return null;
-    return detectOpenAccessor(value);
-  }, [value, dismissed]);
+    return detectOpenAccessor(value, accessorDef);
+  }, [value, dismissed, accessorDef]);
 
   const { suggestions, header } = useMemo((): {
     suggestions: SuggestionItem[];
@@ -154,6 +225,46 @@ export function PathInput({
       return { suggestions: [], header: null };
     }
 
+    const escapeRules = accessorDef?.escapeRules ?? [
+      { char: "\\", replacement: "\\\\" },
+      { char: '"', replacement: '\\"' },
+    ];
+
+    // --- Method accessor: suggest the method name ---
+    if (accessor.type === "method") {
+      if (typeof resolved.value !== "object") {
+        return { suggestions: [], header: null };
+      }
+
+      const methodName = accessorDef?.keyAccess.type === "method"
+        ? accessorDef.keyAccess.methodName
+        : "";
+      const partial = accessor.partialMethod.toLowerCase();
+
+      if (!methodName.toLowerCase().startsWith(partial)) {
+        return { suggestions: [], header: null };
+      }
+
+      const { open } = getKeyInsertDelimiters(accessorDef!);
+
+      return {
+        suggestions: [
+          {
+            label: `${methodName}(…)`,
+            insertValue: methodName,
+            detail: Array.isArray(resolved.value)
+              ? `navigate array (${(resolved.value as unknown[]).length} items)`
+              : "navigate into key",
+            rawInsert: open.startsWith(".")
+              ? open
+              : `.${methodName}${accessorDef!.stringQuote}`,
+          },
+        ],
+        header: null,
+      };
+    }
+
+    // --- String accessor: suggest object keys ---
     if (accessor.type === "string") {
       if (typeof resolved.value !== "object" || Array.isArray(resolved.value)) {
         return { suggestions: [], header: null };
@@ -183,7 +294,7 @@ export function PathInput({
       };
     }
 
-    // Index accessor — but the resolved value might be an object
+    // --- Index accessor — but the resolved value might be an object ---
     if (!Array.isArray(resolved.value)) {
       if (typeof resolved.value === "object") {
         const keys = Object.keys(resolved.value as Record<string, unknown>);
@@ -193,23 +304,27 @@ export function PathInput({
           : keys;
         filtered.sort((a, b) => a.localeCompare(b));
 
+        const keyDelim = accessorDef
+          ? getKeyInsertDelimiters(accessorDef)
+          : { open: '["', close: '"]' };
+
         return {
-          suggestions: filtered.slice(0, 50).map((k) => ({
-            label: k,
-            insertValue: k,
-            wrapOpen: '["',
-            wrapClose: '"]',
-          })),
-          header: (
-            <span>
-              Object — select a key
-            </span>
-          ),
+          suggestions: filtered.slice(0, 50).map((k) => {
+            const escaped = escapeKeyForDelimiter(k, escapeRules);
+            return {
+              label: k,
+              insertValue: escaped,
+              wrapOpen: keyDelim.open,
+              wrapClose: keyDelim.close,
+            };
+          }),
+          header: <span>Object — select a key</span>,
         };
       }
       return { suggestions: [], header: null };
     }
 
+    // --- Array index suggestions ---
     const arr = resolved.value as unknown[];
     const partial = accessor.partialIndex.trim();
 
@@ -225,8 +340,8 @@ export function PathInput({
         if (item === null) detail = "null";
         else if (Array.isArray(item)) detail = `array (${item.length})`;
         else if (typeof item === "object") {
-          const keys = Object.keys(item as Record<string, unknown>);
-          detail = `{${keys.slice(0, 3).join(", ")}${keys.length > 3 ? ", …" : ""}}`;
+          const objKeys = Object.keys(item as Record<string, unknown>);
+          detail = `{${objKeys.slice(0, 3).join(", ")}${objKeys.length > 3 ? ", …" : ""}}`;
         } else {
           const s = JSON.stringify(item);
           detail = s.length > 40 ? s.slice(0, 40) + "…" : s;
@@ -242,7 +357,7 @@ export function PathInput({
         </span>
       ),
     };
-  }, [accessor, jsonData]);
+  }, [accessor, jsonData, accessorDef]);
 
   useEffect(() => {
     setSelectedIndex(0);
@@ -261,13 +376,20 @@ export function PathInput({
     (item: SuggestionItem) => {
       if (!accessor) return;
 
+      const escapeRules = accessorDef?.escapeRules ?? [
+        { char: "\\", replacement: "\\\\" },
+        { char: '"', replacement: '\\"' },
+      ];
+
       let newValue: string;
-      if (item.wrapOpen !== undefined && item.wrapClose !== undefined) {
-        const escaped = escapeKey(item.insertValue, item.wrapOpen);
+
+      if (item.rawInsert !== undefined) {
+        newValue = accessor.completedPath + item.rawInsert;
+      } else if (item.wrapOpen !== undefined && item.wrapClose !== undefined) {
         newValue =
-          accessor.completedPath + item.wrapOpen + escaped + item.wrapClose;
+          accessor.completedPath + item.wrapOpen + item.insertValue + item.wrapClose;
       } else if (accessor.type === "string") {
-        const escaped = escapeKey(item.insertValue, accessor.openDelimiter);
+        const escaped = escapeKeyForDelimiter(item.insertValue, escapeRules);
         newValue =
           accessor.completedPath +
           accessor.openDelimiter +
@@ -281,7 +403,7 @@ export function PathInput({
       setDismissed(false);
       requestAnimationFrame(() => inputRef.current?.focus());
     },
-    [accessor, onChange]
+    [accessor, onChange, accessorDef]
   );
 
   const handleKeyDown = useCallback(
@@ -313,6 +435,12 @@ export function PathInput({
   );
 
   const showDropdown = suggestions.length > 0 || header;
+  const partialHighlight =
+    accessor?.type === "string"
+      ? accessor.partialKey
+      : accessor?.type === "method"
+        ? accessor.partialMethod
+        : undefined;
 
   return (
     <div className="flex gap-2 relative">
@@ -357,8 +485,8 @@ export function PathInput({
                   }`}
                 >
                   <span className="text-sm font-mono truncate shrink-0">
-                    {accessor?.type === "string" && accessor.partialKey
-                      ? highlightMatch(item.label, accessor.partialKey)
+                    {partialHighlight
+                      ? highlightMatch(item.label, partialHighlight)
                       : item.label}
                   </span>
                   {item.detail && (

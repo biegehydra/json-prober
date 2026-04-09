@@ -11,6 +11,7 @@ import { CopyButton } from "@/components/shared/CopyButton";
 import { PathInput } from "@/components/shared/PathInput";
 import { parseJson } from "@/lib/parser";
 import { parseBracketPath, resolvePathSegments } from "@/lib/path-resolver";
+import type { AccessorDefinition } from "@/lib/serializers/types";
 
 function ExploreContent() {
   const searchParams = useSearchParams();
@@ -19,6 +20,7 @@ function ExploreContent() {
   const [pathInput, setPathInput] = useState(initialPath);
   const [jsonData, setJsonData] = useState<unknown>(undefined);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [accessorDef, setAccessorDef] = useState<AccessorDefinition | undefined>(undefined);
 
   useEffect(() => {
     try {
@@ -33,6 +35,15 @@ function ExploreContent() {
         return;
       }
       setJsonData(parsed.data);
+
+      const defJson = localStorage.getItem("jsondig-explore-def");
+      if (defJson) {
+        try {
+          setAccessorDef(JSON.parse(defJson) as AccessorDefinition);
+        } catch {
+          // ignore malformed definition
+        }
+      }
     } catch {
       setLoadError("Failed to read JSON data from storage.");
     }
@@ -94,6 +105,7 @@ function ExploreContent() {
               onChange={handlePathChange}
               jsonData={jsonData}
               placeholder='e.g. root["data"]["sections"][0]'
+              accessorDef={accessorDef}
             />
             {resolved.error && (
               <p className="mt-2 text-xs text-error flex items-center gap-1.5">

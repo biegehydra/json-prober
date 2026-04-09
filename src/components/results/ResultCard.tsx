@@ -87,12 +87,16 @@ export function ResultCard({
   const openInExplorer = useCallback(() => {
     try {
       localStorage.setItem("jsondig-explore-data", jsonInput);
+      localStorage.setItem(
+        "jsondig-explore-def",
+        JSON.stringify(serializer.definition)
+      );
     } catch {
       // quota exceeded — unlikely for <20MB
     }
     const encoded = encodeURIComponent(parentPath);
     window.open(`/explore?path=${encoded}`, "_blank");
-  }, [jsonInput, parentPath]);
+  }, [jsonInput, parentPath, serializer.definition]);
 
   const matchLabel = result.matchedOn === "key" ? "Key" : "Value";
   const matchDisplay =

@@ -3,7 +3,7 @@ import type { Serializer } from "./types";
 const serializers = new Map<string, Serializer>();
 
 export function registerSerializer(serializer: Serializer): void {
-  serializers.set(serializer.config.id, serializer);
+  serializers.set(serializer.definition.id, serializer);
 }
 
 export function getSerializer(id: string): Serializer | undefined {
@@ -18,7 +18,7 @@ export function getDefaultOptions(id: string): Record<string, unknown> {
   const s = serializers.get(id);
   if (!s) return {};
   const opts: Record<string, unknown> = {};
-  for (const opt of s.config.options) {
+  for (const opt of s.definition.options) {
     opts[opt.id] = opt.default;
   }
   return opts;

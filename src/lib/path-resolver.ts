@@ -1,42 +1,33 @@
 import type { PathSegment } from "./types";
 
 /**
- * Parse a bracket-notation path string into PathSegments.
- * Handles formats like:
+ * Parse a path string into PathSegments.
+ * Handles mixed formats:
  *   root["data"]["sections"][6]["lat"]
  *   root?["data"]?["sections"]?[6]?["lat"]
  *   root.GetProperty("data").GetProperty("sections")[6]
+ *   root.Method("key")[0].Method("other")
  */
 export function parseBracketPath(input: string): PathSegment[] {
-  const cleaned = input
-    .replace(/\?\[/g, "[")
-    .replace(/\?\./g, ".");
+  const cleaned = input.replace(/\?\[/g, "[").replace(/\?\./g, ".");
 
   const segments: PathSegment[] = [];
+  const combined =
+    /\[\s*"((?:[^"\\]|\\.)*)"\s*\]|\[\s*(\d+)\s*\]|\.\w+\(\s*"((?:[^"\\]|\\.)*)"\s*\)/g;
 
-  const bracketRe =
-    /\[\s*"((?:[^"\\]|\\.)*)"\s*\]|\[\s*(\d+)\s*\]/g;
-
-  const getPropertyRe = /\.GetProperty\(\s*"((?:[^"\\]|\\.)*)"\s*\)/g;
-
-  let hasMatches = false;
-
-  for (const m of cleaned.matchAll(bracketRe)) {
-    hasMatches = true;
+  for (const m of cleaned.matchAll(combined)) {
     if (m[1] !== undefined) {
-      const key = m[1].replace(/\\"/g, '"').replace(/\\\\/g, "\\");
-      segments.push({ type: "key", value: key });
-    } else {
+      segments.push({
+        type: "key",
+        value: m[1].replace(/\\"/g, '"').replace(/\\\\/g, "\\"),
+      });
+    } else if (m[2] !== undefined) {
       segments.push({ type: "index", value: parseInt(m[2], 10) });
-    }
-  }
-
-  if (!hasMatches) {
-    for (const m of cleaned.matchAll(getPropertyRe)) {
-      if (m[1] !== undefined) {
-        const key = m[1].replace(/\\"/g, '"').replace(/\\\\/g, "\\");
-        segments.push({ type: "key", value: key });
-      }
+    } else if (m[3] !== undefined) {
+      segments.push({
+        type: "key",
+        value: m[3].replace(/\\"/g, '"').replace(/\\\\/g, "\\"),
+      });
     }
   }
 

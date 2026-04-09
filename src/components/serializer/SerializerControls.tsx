@@ -18,7 +18,7 @@ export function SerializerControls({
   options,
   onChangeOptions,
 }: SerializerControlsProps) {
-  const selected = serializers.find((s) => s.config.id === selectedId);
+  const selected = serializers.find((s) => s.definition.id === selectedId);
 
   const updateOption = useCallback(
     (id: string, value: unknown) => {
@@ -34,24 +34,24 @@ export function SerializerControls({
         <div className="inline-flex rounded border border-border overflow-hidden">
           {serializers.map((s) => (
             <button
-              key={s.config.id}
-              onClick={() => onSelectId(s.config.id)}
+              key={s.definition.id}
+              onClick={() => onSelectId(s.definition.id)}
               className={`px-3 py-1.5 text-xs transition-colors ${
-                selectedId === s.config.id
+                selectedId === s.definition.id
                   ? "bg-accent text-white"
                   : "text-text-secondary hover:text-text-primary hover:bg-surface-hover"
               }`}
-              title={s.config.description}
+              title={s.definition.description}
             >
-              {s.config.label}
+              {s.definition.label}
             </button>
           ))}
         </div>
       </div>
 
-      {selected && selected.config.options.length > 0 && (
+      {selected && selected.definition.options.length > 0 && (
         <div className="flex flex-wrap items-center gap-4">
-          {selected.config.options.map((opt) => {
+          {selected.definition.options.map((opt) => {
             if (opt.type === "boolean") {
               return (
                 <label
