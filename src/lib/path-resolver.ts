@@ -16,6 +16,15 @@ function unescapeKey(raw: string, quote: string): string {
  *   root.GetProperty("key")[0]
  *   root.get("key").get(0)
  */
+/**
+ * Extract the root variable from a path string.
+ * Returns everything before the first accessor (bracket, dot-method, or optional chaining).
+ */
+export function extractRootVar(input: string): string {
+  const match = input.match(/^([^.[?]+)/);
+  return match ? match[1] : input;
+}
+
 export function parseBracketPath(input: string): PathSegment[] {
   const cleaned = input.replace(/\?\[/g, "[").replace(/\?\.\[/g, "[").replace(/\?\./g, ".");
 

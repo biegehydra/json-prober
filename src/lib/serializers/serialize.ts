@@ -1,4 +1,5 @@
 import type { PathSegment } from "../types";
+import { parseBracketPath, extractRootVar } from "../path-resolver";
 import type { AccessorDefinition, Serializer } from "./types";
 
 function applyEscapes(
@@ -34,6 +35,23 @@ export function serializeFromDefinition(
   }
 
   return result;
+}
+
+/**
+ * Convert a path string from one accessor format to another.
+ * Parses the old path into segments, preserves the root variable,
+ * and re-serializes using the target definition's canonical format.
+ */
+export function convertPath(
+  pathString: string,
+  toDef: AccessorDefinition
+): string {
+  const rootVar = extractRootVar(pathString);
+  const segments = parseBracketPath(pathString);
+
+  if (segments.length === 0) return rootVar;
+
+  return serializeFromDefinition(toDef, segments, { rootVar });
 }
 
 export function createSerializer(def: AccessorDefinition): Serializer {

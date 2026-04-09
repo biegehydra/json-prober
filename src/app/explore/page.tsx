@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, Suspense } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, AlertCircle } from "lucide-react";
 import CodeMirror from "@uiw/react-codemirror";
@@ -14,6 +14,7 @@ import { parseJson } from "@/lib/parser";
 import { parseBracketPath, resolvePathSegments } from "@/lib/path-resolver";
 import { registerAllPresets } from "@/lib/serializers/presets";
 import { getAllSerializers, getSerializer } from "@/lib/serializers/registry";
+import { convertPath } from "@/lib/serializers/serialize";
 import { useSerializerStore } from "@/stores/serializer";
 
 registerAllPresets();
@@ -34,6 +35,20 @@ function ExploreContent() {
     () => getSerializer(serializerId) ?? allSerializers[0],
     [serializerId, allSerializers]
   );
+
+  const prevSerializerIdRef = useRef(serializerId);
+  useEffect(() => {
+    const prevId = prevSerializerIdRef.current;
+    if (prevId === serializerId) return;
+    prevSerializerIdRef.current = serializerId;
+
+    if (!currentSerializer || !pathInput.trim()) return;
+
+    const converted = convertPath(pathInput, currentSerializer.definition);
+    if (converted !== pathInput) {
+      setPathInput(converted);
+    }
+  }, [serializerId, currentSerializer, pathInput]);
 
   useEffect(() => {
     try {
