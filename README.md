@@ -81,4 +81,4 @@ Then open [http://localhost:3000](http://localhost:3000).
 
 ## License
 
-MIT
+GNU Affero General Public License v3.0
