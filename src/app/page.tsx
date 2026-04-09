@@ -164,7 +164,7 @@ export default function Home() {
           </span>
         </div>
         <a
-          href="https://github.com"
+          href="https://github.com/biegehydra/json-prober"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors"

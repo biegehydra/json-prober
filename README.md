@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# JSON Prober
 
-## Getting Started
+**[jsonprober.com](https://jsonprober.com)**
 
-First, run the development server:
+A free online tool for searching through JSON data and generating copy-paste-ready accessor code in your language of choice.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Search
+
+Paste or upload your JSON payload, then search by key name, value, or both. JSON Prober walks the entire tree and returns every matching path as ready-to-use code like `root?["data"]?["items"]?[0]` in C# or `node.get("data").get("items").get(0)` in Java.
+
+You can filter by match type (contains, equals, regex, etc.), narrow results by JSON type, run numeric comparisons, and ignore specific keys. Pick your language from the code format dropdown and each result updates instantly. Currently supports C# (Newtonsoft.Json, System.Text.Json), Python, JavaScript/TypeScript, Java (Jackson/Gson), Go, Ruby, PHP, Kotlin, Swift, and Rust.
+
+<!-- TODO: Add screenshot of the main search page -->
+
+## Path Explorer
+
+Click any result to open it in the path explorer, or open the full JSON from the main page. The explorer lets you type or edit an accessor path and see the live-beautified JSON at that location. Autocomplete suggests object keys, array indices (with value previews), and method names as you type.
+
+Switching languages in the explorer re-translates your current path into the new format automatically.
+
+<!-- TODO: Add screenshot of the path explorer page -->
+
+## Features
+
+- Search by key, value, or both with contains, equals, starts with, ends with, or regex
+- Numeric comparison mode for filtering by number ranges
+- Type filtering for strings, numbers, booleans, objects, arrays, or nulls
+- Ignore specific keys
+- Path explorer with autocomplete and live JSON preview
+- Runs entirely in the browser. No data is sent to any server.
+
+## Contributing a new language
+
+Adding support for a new language or library is straightforward. Each one is just a single config object that describes how that language accesses object keys and array indices. Here's what Python looks like:
+
+```typescript
+const pythonDict: AccessorDefinition = {
+  id: "python-dict",
+  label: "Dict / List",
+  language: "python",
+  description: "Python dictionary bracket access",
+  keyAccess: { type: "indexer", template: '["{value}"]' },
+  indexAccess: { type: "indexer", template: "[{value}]" },
+  stringQuote: '"',
+  escapeRules: [
+    { char: '"', replacement: '\\"' },
+    { char: "\\", replacement: "\\\\" },
+  ],
+  options: [
+    { id: "rootVar", label: "Root variable", type: "string", default: "data" },
+  ],
+};
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Create a new file in `src/lib/serializers/presets/`, add your definition, and register it in `presets/index.ts`. That's it. Serialization, autocomplete, and language switching all work automatically from the definition.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+If you use a language or library that isn't supported yet, PRs are welcome. Open an issue if you're not sure about the accessor format.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Running locally
 
-## Learn More
+```bash
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Then open [http://localhost:3000](http://localhost:3000).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Tech stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Next.js (static export)
+- TypeScript
+- Tailwind CSS
+- CodeMirror 6
+- Zustand
 
-## Deploy on Vercel
+## License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
