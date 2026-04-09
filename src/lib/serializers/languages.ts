@@ -9,6 +9,7 @@ export const LANGUAGE_DISPLAY: Record<string, string> = {
   kotlin: "Kotlin",
   swift: "Swift",
   rust: "Rust",
+  generic: "Generic",
 };
 
 export const LANGUAGE_COLORS: Record<string, { bg: string; text: string }> = {
@@ -22,6 +23,7 @@ export const LANGUAGE_COLORS: Record<string, { bg: string; text: string }> = {
   kotlin:     { bg: "rgba(169, 101, 232, 0.2)",   text: "#c48ef0" },  // violet
   swift:      { bg: "rgba(240, 81, 56, 0.2)",    text: "#f07860" },  // orange-red
   rust:       { bg: "rgba(222, 165, 100, 0.2)",   text: "#dea564" },  // rust/amber
+  generic:    { bg: "rgba(160, 160, 160, 0.2)",   text: "#b0b0b0" },  // neutral gray
 };
 
 export function getLanguageLabel(code: string): string {

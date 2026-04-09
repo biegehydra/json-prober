@@ -11,10 +11,14 @@ import { phpArrayDef } from "./php";
 import { kotlinMapDef } from "./kotlin";
 import { swiftSwiftyJsonDef } from "./swift";
 import { rustSerdeDef } from "./rust";
+import { dotPascalDef, dotCamelDef, dotSnakeDef } from "./dot-notation";
 
 const ALL_DEFINITIONS = [
   csharpNewtonsoftDef,
   csharpStjDef,
+  dotPascalDef,
+  dotCamelDef,
+  dotSnakeDef,
   goMapDef,
   javaJacksonDef,
   jsBracketDef,

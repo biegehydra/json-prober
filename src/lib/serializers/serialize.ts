@@ -1,6 +1,7 @@
 import type { PathSegment } from "../types";
-import { parseBracketPath, extractRootVar } from "../path-resolver";
-import type { AccessorDefinition, Serializer } from "./types";
+import { parseBracketPath, extractRootVar, reconcileSegments } from "../path-resolver";
+import type { AccessorDefinition, KeyAccess, Serializer } from "./types";
+import { transformKey } from "../case-transforms";
 
 function applyEscapes(
   value: string,
@@ -11,6 +12,18 @@ function applyEscapes(
     result = result.replaceAll(rule.char, rule.replacement);
   }
   return result;
+}
+
+function applyKeyAccess(
+  access: KeyAccess,
+  key: string,
+  escapeRules: { char: string; replacement: string }[]
+): string {
+  if (access.type === "property") {
+    return access.separator + transformKey(key, access);
+  }
+  const escaped = applyEscapes(key, escapeRules);
+  return access.template.replace("{value}", escaped);
 }
 
 export function serializeFromDefinition(
@@ -26,8 +39,7 @@ export function serializeFromDefinition(
   for (const seg of path) {
     if (seg.type === "key") {
       const access = useNullSafe ? def.nullSafe!.keyAccess : def.keyAccess;
-      const escaped = applyEscapes(seg.value, def.escapeRules);
-      result += access.template.replace("{value}", escaped);
+      result += applyKeyAccess(access, seg.value, def.escapeRules);
     } else {
       const access = useNullSafe ? def.nullSafe!.indexAccess : def.indexAccess;
       result += access.template.replace("{value}", String(seg.value));
@@ -41,15 +53,28 @@ export function serializeFromDefinition(
  * Convert a path string from one accessor format to another.
  * Parses the old path into segments, preserves the root variable,
  * and re-serializes using the target definition's canonical format.
+ *
+ * When the source definition uses property access and jsonData is provided,
+ * reconciles case-transformed keys back to original JSON keys first.
  */
 export function convertPath(
   pathString: string,
-  toDef: AccessorDefinition
+  toDef: AccessorDefinition,
+  jsonData?: unknown,
+  fromDef?: AccessorDefinition
 ): string {
   const rootVar = extractRootVar(pathString);
-  const segments = parseBracketPath(pathString);
+  let segments = parseBracketPath(pathString);
 
   if (segments.length === 0) return rootVar;
+
+  if (
+    jsonData !== undefined &&
+    fromDef?.keyAccess.type === "property"
+  ) {
+    const reconciled = reconcileSegments(segments, jsonData, fromDef.keyAccess);
+    segments = reconciled.segments;
+  }
 
   return serializeFromDefinition(toDef, segments, { rootVar });
 }

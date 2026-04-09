@@ -135,6 +135,7 @@ export default function Home() {
             serializer={currentSerializer}
             serializerOptions={serializerOptions}
             jsonInput={jsonInput}
+            parsedData={parseResult.data}
           />
         )}
 

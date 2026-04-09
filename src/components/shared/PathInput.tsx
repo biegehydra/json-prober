@@ -9,9 +9,11 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
-import { parseBracketPath, resolvePathSegments } from "@/lib/path-resolver";
+import { AlertTriangle } from "lucide-react";
+import { parseBracketPath, resolvePathSegments, reconcileSegments } from "@/lib/path-resolver";
 import { CopyButton } from "./CopyButton";
 import type { AccessorDefinition } from "@/lib/serializers/types";
+import { transformKey, findAmbiguousKeys } from "@/lib/case-transforms";
 
 interface PathInputProps {
   value: string;
@@ -37,15 +39,17 @@ function extractDelimitersFromTemplate(template: string): StringDelimiter {
 }
 
 function getStringDelimiters(def: AccessorDefinition): StringDelimiter[] {
+  if (def.keyAccess.type === "property") return [];
   const delims: StringDelimiter[] = [];
   delims.push(extractDelimitersFromTemplate(def.keyAccess.template));
-  if (def.nullSafe) {
+  if (def.nullSafe && def.nullSafe.keyAccess.type !== "property") {
     delims.push(extractDelimitersFromTemplate(def.nullSafe.keyAccess.template));
   }
   return delims;
 }
 
-function getKeyInsertDelimiters(def: AccessorDefinition): StringDelimiter {
+function getKeyInsertDelimiters(def: AccessorDefinition): StringDelimiter | null {
+  if (def.keyAccess.type === "property") return null;
   return extractDelimitersFromTemplate(def.keyAccess.template);
 }
 
@@ -72,15 +76,25 @@ interface OpenMethodAccessor {
   dotPos: number;
 }
 
-type OpenAccessor = OpenStringAccessor | OpenIndexAccessor | OpenMethodAccessor;
+interface OpenPropertyAccessor {
+  type: "property";
+  completedPath: string;
+  partialKey: string;
+  dotPos: number;
+}
+
+type OpenAccessor = OpenStringAccessor | OpenIndexAccessor | OpenMethodAccessor | OpenPropertyAccessor;
 
 function detectOpenAccessor(
   input: string,
   def: AccessorDefinition | undefined
 ): OpenAccessor | null {
-  const stringDelims = def ? getStringDelimiters(def) : [{ open: '["', close: '"]' }];
+  const isPropertyAccess = def?.keyAccess.type === "property";
+  const stringDelims = def && !isPropertyAccess
+    ? getStringDelimiters(def)
+    : isPropertyAccess ? [] : [{ open: '["', close: '"]' }];
 
-  // 1. Check for open string accessor
+  // 1. Check for open string accessor (only for non-property access)
   let bestStringPos = -1;
   let bestString: OpenStringAccessor | null = null;
 
@@ -119,7 +133,7 @@ function detectOpenAccessor(
     if (pos === -1) break;
 
     const charAfterBracket = input[pos + 1];
-    if (charAfterBracket === quote) {
+    if (!isPropertyAccess && charAfterBracket === quote) {
       idxSearch = pos;
       continue;
     }
@@ -139,7 +153,7 @@ function detectOpenAccessor(
     idxSearch = pos;
   }
 
-  // 3. Check for dot-method accessor (only if keyAccess is method-based)
+  // 3a. Check for dot-method accessor (only if keyAccess is method-based)
   let bestMethodPos = -1;
   let bestMethod: OpenMethodAccessor | null = null;
 
@@ -163,11 +177,32 @@ function detectOpenAccessor(
     }
   }
 
+  // 3b. Check for dot-property accessor (only if keyAccess is property-based)
+  let bestPropertyPos = -1;
+  let bestProperty: OpenPropertyAccessor | null = null;
+
+  if (isPropertyAccess) {
+    const dotPos = input.lastIndexOf(".");
+    if (dotPos !== -1) {
+      const afterDot = input.substring(dotPos + 1);
+      if (!afterDot.includes("[") && !afterDot.includes("(")) {
+        bestPropertyPos = dotPos;
+        bestProperty = {
+          type: "property",
+          completedPath: input.substring(0, dotPos),
+          partialKey: afterDot,
+          dotPos,
+        };
+      }
+    }
+  }
+
   // Return whichever is latest in the string
   const candidates: [number, OpenAccessor][] = [];
   if (bestString) candidates.push([bestStringPos, bestString]);
   if (bestIndex) candidates.push([bestIndexPos, bestIndex]);
   if (bestMethod) candidates.push([bestMethodPos, bestMethod]);
+  if (bestProperty) candidates.push([bestPropertyPos, bestProperty]);
 
   if (candidates.length === 0) return null;
   candidates.sort((a, b) => b[0] - a[0]);
@@ -192,6 +227,7 @@ interface SuggestionItem {
   wrapOpen?: string;
   wrapClose?: string;
   rawInsert?: string;
+  ambiguous?: boolean;
 }
 
 export function PathInput({
@@ -218,7 +254,13 @@ export function PathInput({
     if (!accessor || jsonData === undefined)
       return { suggestions: [], header: null };
 
-    const segments = parseBracketPath(accessor.completedPath);
+    let segments = parseBracketPath(accessor.completedPath);
+
+    if (accessorDef?.keyAccess.type === "property") {
+      const reconciled = reconcileSegments(segments, jsonData, accessorDef.keyAccess);
+      segments = reconciled.segments;
+    }
+
     const resolved = resolvePathSegments(jsonData, segments);
 
     if (resolved.error || resolved.value === null || resolved.value === undefined) {
@@ -245,7 +287,7 @@ export function PathInput({
         return { suggestions: [], header: null };
       }
 
-      const { open } = getKeyInsertDelimiters(accessorDef!);
+      const delims = getKeyInsertDelimiters(accessorDef!);
 
       return {
         suggestions: [
@@ -255,11 +297,63 @@ export function PathInput({
             detail: Array.isArray(resolved.value)
               ? `navigate array (${(resolved.value as unknown[]).length} items)`
               : "navigate into key",
-            rawInsert: open.startsWith(".")
-              ? open
+            rawInsert: delims && delims.open.startsWith(".")
+              ? delims.open
               : `.${methodName}${accessorDef!.stringQuote}`,
           },
         ],
+        header: null,
+      };
+    }
+
+    // --- Property accessor: suggest transformed keys ---
+    if (accessor.type === "property") {
+      if (typeof resolved.value !== "object" || Array.isArray(resolved.value)) {
+        return { suggestions: [], header: null };
+      }
+
+      const obj = resolved.value as Record<string, unknown>;
+      const access = accessorDef!.keyAccess as import("@/lib/serializers/types").PropertyAccess;
+      const ambiguousMap = findAmbiguousKeys(obj, access);
+
+      const keys = Object.keys(obj);
+      const partial = accessor.partialKey.toLowerCase();
+
+      const items: SuggestionItem[] = [];
+      const seen = new Set<string>();
+
+      for (const key of keys) {
+        const transformed = transformKey(key, access);
+        if (seen.has(transformed)) continue;
+        seen.add(transformed);
+
+        if (partial && !transformed.toLowerCase().includes(partial)) continue;
+
+        const isAmbiguous = ambiguousMap.has(transformed);
+        const colliders = ambiguousMap.get(transformed);
+
+        items.push({
+          label: transformed,
+          insertValue: transformed,
+          detail: isAmbiguous
+            ? `Ambiguous: ${colliders!.join(", ")}`
+            : undefined,
+          rawInsert: "." + transformed,
+          ambiguous: isAmbiguous,
+        });
+      }
+
+      items.sort((a, b) => {
+        if (a.ambiguous !== b.ambiguous) return a.ambiguous ? 1 : -1;
+        if (!partial) return a.label.localeCompare(b.label);
+        const aStarts = a.label.toLowerCase().startsWith(partial);
+        const bStarts = b.label.toLowerCase().startsWith(partial);
+        if (aStarts !== bStarts) return aStarts ? -1 : 1;
+        return a.label.localeCompare(b.label);
+      });
+
+      return {
+        suggestions: items.slice(0, 50),
         header: null,
       };
     }
@@ -307,6 +401,10 @@ export function PathInput({
         const keyDelim = accessorDef
           ? getKeyInsertDelimiters(accessorDef)
           : { open: '["', close: '"]' };
+
+        if (!keyDelim) {
+          return { suggestions: [], header: null };
+        }
 
         return {
           suggestions: filtered.slice(0, 50).map((k) => {
@@ -374,7 +472,7 @@ export function PathInput({
 
   const selectSuggestion = useCallback(
     (item: SuggestionItem) => {
-      if (!accessor) return;
+      if (!accessor || item.ambiguous) return;
 
       const escapeRules = accessorDef?.escapeRules ?? [
         { char: "\\", replacement: "\\\\" },
@@ -421,7 +519,7 @@ export function PathInput({
           break;
         case "Tab":
         case "Enter":
-          if (suggestions.length > 0) {
+          if (suggestions.length > 0 && !suggestions[selectedIndex]?.ambiguous) {
             e.preventDefault();
             selectSuggestion(suggestions[selectedIndex]);
           }
@@ -440,7 +538,9 @@ export function PathInput({
       ? accessor.partialKey
       : accessor?.type === "method"
         ? accessor.partialMethod
-        : undefined;
+        : accessor?.type === "property"
+          ? accessor.partialKey
+          : undefined;
 
   return (
     <div className="flex gap-2 relative">
@@ -475,22 +575,27 @@ export function PathInput({
                   data-active={isActive ? "" : undefined}
                   onMouseDown={(e) => {
                     e.preventDefault();
-                    selectSuggestion(item);
+                    if (!item.ambiguous) selectSuggestion(item);
                   }}
                   onMouseEnter={() => setSelectedIndex(i)}
                   className={`w-full text-left px-3 py-1.5 flex items-center gap-3 transition-colors ${
-                    isActive
-                      ? "bg-accent/20 text-text-primary"
-                      : "text-text-secondary hover:bg-surface-hover"
+                    item.ambiguous
+                      ? "opacity-50 cursor-not-allowed"
+                      : isActive
+                        ? "bg-accent/20 text-text-primary"
+                        : "text-text-secondary hover:bg-surface-hover"
                   }`}
                 >
+                  {item.ambiguous && (
+                    <AlertTriangle size={12} className="shrink-0 text-yellow-500" />
+                  )}
                   <span className="text-sm font-mono truncate shrink-0">
                     {partialHighlight
                       ? highlightMatch(item.label, partialHighlight)
                       : item.label}
                   </span>
                   {item.detail && (
-                    <span className="text-xs text-text-muted truncate">
+                    <span className={`text-xs truncate ${item.ambiguous ? "text-yellow-500" : "text-text-muted"}`}>
                       {item.detail}
                     </span>
                   )}

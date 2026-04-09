@@ -2,17 +2,18 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, AlertCircle } from "lucide-react";
+import { ArrowLeft, AlertCircle, AlertTriangle } from "lucide-react";
 import { CopyButton } from "@/components/shared/CopyButton";
 import { JsonView } from "@/components/shared/JsonView";
 import { PathInput } from "@/components/shared/PathInput";
 import { SerializerSelect } from "@/components/serializer/SerializerSelect";
 import { parseJson } from "@/lib/parser";
-import { parseBracketPath, resolvePathSegments } from "@/lib/path-resolver";
+import { parseBracketPath, resolvePathSegments, reconcileSegments, checkPathAmbiguity } from "@/lib/path-resolver";
 import { registerAllPresets } from "@/lib/serializers/presets";
 import { getAllSerializers, getSerializer } from "@/lib/serializers/registry";
 import { convertPath } from "@/lib/serializers/serialize";
 import { useSerializerStore } from "@/stores/serializer";
+import type { AccessorDefinition } from "@/lib/serializers/types";
 
 registerAllPresets();
 
@@ -33,19 +34,29 @@ function ExploreContent() {
     [serializerId, allSerializers]
   );
 
-  const prevSerializerIdRef = useRef(serializerId);
+  const prevSerializerRef = useRef<{ id: string; def?: AccessorDefinition }>({
+    id: serializerId,
+    def: currentSerializer?.definition,
+  });
   useEffect(() => {
-    const prevId = prevSerializerIdRef.current;
-    if (prevId === serializerId) return;
-    prevSerializerIdRef.current = serializerId;
+    const prev = prevSerializerRef.current;
+    if (prev.id === serializerId) return;
+
+    const fromDef = prev.def;
+    prevSerializerRef.current = { id: serializerId, def: currentSerializer?.definition };
 
     if (!currentSerializer || !pathInput.trim()) return;
 
-    const converted = convertPath(pathInput, currentSerializer.definition);
+    const converted = convertPath(
+      pathInput,
+      currentSerializer.definition,
+      jsonData,
+      fromDef
+    );
     if (converted !== pathInput) {
       setPathInput(converted);
     }
-  }, [serializerId, currentSerializer, pathInput]);
+  }, [serializerId, currentSerializer, pathInput, jsonData]);
 
   useEffect(() => {
     try {
@@ -65,13 +76,29 @@ function ExploreContent() {
     }
   }, []);
 
+  const accessorDef = currentSerializer?.definition;
+
   const resolved = useMemo(() => {
     if (jsonData === undefined) return { value: undefined, error: undefined };
     if (!pathInput.trim()) return { value: jsonData, error: undefined };
-    const segments = parseBracketPath(pathInput);
+    let segments = parseBracketPath(pathInput);
     if (segments.length === 0) return { value: jsonData, error: undefined };
+
+    if (accessorDef?.keyAccess.type === "property") {
+      const reconciled = reconcileSegments(segments, jsonData, accessorDef.keyAccess);
+      segments = reconciled.segments;
+    }
+
     return resolvePathSegments(jsonData, segments);
-  }, [jsonData, pathInput]);
+  }, [jsonData, pathInput, accessorDef]);
+
+  const ambiguity = useMemo(() => {
+    if (jsonData === undefined || !pathInput.trim()) return null;
+    if (accessorDef?.keyAccess.type !== "property") return null;
+    const segments = parseBracketPath(pathInput);
+    if (segments.length === 0) return null;
+    return checkPathAmbiguity(segments, jsonData, accessorDef.keyAccess);
+  }, [jsonData, pathInput, accessorDef]);
 
   const beautified = useMemo(() => {
     if (resolved.value === undefined && resolved.error) return "";
@@ -85,8 +112,6 @@ function ExploreContent() {
   const handlePathChange = useCallback((value: string) => {
     setPathInput(value);
   }, []);
-
-  const accessorDef = currentSerializer?.definition;
 
   return (
     <div className="flex flex-col h-full">
@@ -132,7 +157,13 @@ function ExploreContent() {
               placeholder='e.g. root["data"]["sections"][0]'
               accessorDef={accessorDef}
             />
-            {resolved.error && (
+            {ambiguity && (
+              <p className="mt-2 text-xs text-yellow-500 flex items-center gap-1.5">
+                <AlertTriangle size={12} />
+                Ambiguous path: &quot;{ambiguity.transformedKey}&quot; matches multiple keys ({ambiguity.originalKeys.join(", ")})
+              </p>
+            )}
+            {resolved.error && !ambiguity && (
               <p className="mt-2 text-xs text-error flex items-center gap-1.5">
                 <AlertCircle size={12} />
                 {resolved.error}

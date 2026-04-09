@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink, AlertTriangle } from "lucide-react";
 import { CopyButton } from "../shared/CopyButton";
 import { JsonView } from "../shared/JsonView";
+import { checkPathAmbiguity } from "@/lib/path-resolver";
 import type { SearchResult } from "@/lib/search/types";
 import type { Serializer } from "@/lib/serializers/types";
 
@@ -13,6 +14,7 @@ interface ResultCardProps {
   serializerOptions: Record<string, unknown>;
   index: number;
   jsonInput: string;
+  parsedData?: unknown;
 }
 
 function truncatePreview(value: unknown, maxLen = 120): string {
@@ -48,6 +50,7 @@ export function ResultCard({
   serializerOptions,
   index,
   jsonInput,
+  parsedData,
 }: ResultCardProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -56,20 +59,23 @@ export function ResultCard({
     [serializer, result.path, serializerOptions]
   );
 
-  const parentPath = useMemo(() => {
-    if (result.path.length <= 1) return serialized;
-    return serializer.serialize(result.path.slice(0, -1), serializerOptions);
-  }, [serializer, result.path, serializerOptions, serialized]);
+  const ambiguity = useMemo(() => {
+    if (parsedData === undefined) return null;
+    const access = serializer.definition.keyAccess;
+    if (access.type !== "property") return null;
+    return checkPathAmbiguity(result.path, parsedData, access);
+  }, [result.path, parsedData, serializer.definition.keyAccess]);
 
   const openInExplorer = useCallback(() => {
+    if (ambiguity) return;
     try {
       localStorage.setItem("jsonprober-explore-data", jsonInput);
     } catch {
-      // quota exceeded — unlikely for <20MB
+      // quota exceeded
     }
-    const encoded = encodeURIComponent(parentPath);
+    const encoded = encodeURIComponent(serialized);
     window.open(`/explore?path=${encoded}`, "_blank");
-  }, [jsonInput, parentPath]);
+  }, [jsonInput, serialized, ambiguity]);
 
   const matchLabel = result.matchedOn === "key" ? "Key" : "Value";
   const matchDisplay =
@@ -78,7 +84,7 @@ export function ResultCard({
       : truncatePreview(result.matchedValue, 80);
 
   return (
-    <div className="border border-border rounded-lg bg-surface hover:bg-surface-hover transition-colors">
+    <div className={`border rounded-lg bg-surface hover:bg-surface-hover transition-colors ${ambiguity ? "border-yellow-500/40" : "border-border"}`}>
       <div
         role="button"
         tabIndex={0}
@@ -102,6 +108,12 @@ export function ResultCard({
             <span className="inline-block px-1.5 py-0.5 text-[10px] rounded bg-accent-muted text-accent-hover">
               {matchLabel}
             </span>
+            {ambiguity && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded bg-yellow-500/15 text-yellow-500">
+                <AlertTriangle size={10} />
+                Ambiguous
+              </span>
+            )}
             {result.matchedOn === "key" && result.matchedKey && (
               <span className="text-xs text-key font-mono truncate">
                 {result.matchedKey}
@@ -112,6 +124,12 @@ export function ResultCard({
           <div className="mt-1.5 font-mono text-sm text-text-primary break-all leading-relaxed">
             {serialized}
           </div>
+
+          {ambiguity && (
+            <div className="mt-1 text-[11px] text-yellow-500/80">
+              &quot;{ambiguity.transformedKey}&quot; matches: {ambiguity.originalKeys.join(", ")}
+            </div>
+          )}
 
           {result.matchedOn === "value" && result.matchedValue !== undefined && (
             <div className="mt-1 text-xs text-text-muted font-mono truncate">
@@ -126,8 +144,13 @@ export function ResultCard({
         >
           <button
             onClick={openInExplorer}
-            className="inline-flex items-center justify-center rounded p-1.5 text-text-muted hover:text-text-primary hover:bg-surface-hover transition-colors"
-            title="Explore parent in new tab"
+            disabled={!!ambiguity}
+            className={`inline-flex items-center justify-center rounded p-1.5 transition-colors ${
+              ambiguity
+                ? "text-text-muted/30 cursor-not-allowed"
+                : "text-text-muted hover:text-text-primary hover:bg-surface-hover"
+            }`}
+            title={ambiguity ? "Cannot explore ambiguous path" : "Explore parent in new tab"}
           >
             <ExternalLink size={14} />
           </button>

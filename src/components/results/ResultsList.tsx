@@ -9,6 +9,7 @@ interface ResultsListProps {
   serializer: Serializer;
   serializerOptions: Record<string, unknown>;
   jsonInput: string;
+  parsedData?: unknown;
 }
 
 export function ResultsList({
@@ -16,6 +17,7 @@ export function ResultsList({
   serializer,
   serializerOptions,
   jsonInput,
+  parsedData,
 }: ResultsListProps) {
   if (results.length === 0) return null;
 
@@ -39,6 +41,7 @@ export function ResultsList({
             serializerOptions={serializerOptions}
             index={i}
             jsonInput={jsonInput}
+            parsedData={parsedData}
           />
         ))}
       </div>

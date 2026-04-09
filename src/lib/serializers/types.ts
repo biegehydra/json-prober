@@ -16,7 +16,16 @@ export interface MethodAccess {
   template: string;
 }
 
-export type KeyAccess = IndexerAccess | MethodAccess;
+export type CaseTransform = "camelCase" | "PascalCase" | "snake_case";
+
+export interface PropertyAccess {
+  type: "property";
+  separator: string;
+  caseTransform: CaseTransform;
+  invalidCharReplacement: string;
+}
+
+export type KeyAccess = IndexerAccess | MethodAccess | PropertyAccess;
 
 // --- Serializer option (user-configurable toggle/input) ---
 
