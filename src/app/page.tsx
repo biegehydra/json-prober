@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Shovel } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
+import { Shovel, ExternalLink } from "lucide-react";
 import { JsonEditor } from "@/components/json-input/JsonEditor";
 import { SearchPanel } from "@/components/search/SearchPanel";
 import { SerializerControls } from "@/components/serializer/SerializerControls";
@@ -47,6 +47,16 @@ export default function Home() {
 
   const parseResult = useMemo(() => parseJson(jsonInput), [jsonInput]);
 
+  const openRootInExplorer = useCallback(() => {
+    try {
+      localStorage.setItem("jsondig-explore-data", jsonInput);
+    } catch {
+      // quota exceeded
+    }
+    const rootVar = (serializerOptions.rootVar as string) || "root";
+    window.open(`/explore?path=${encodeURIComponent(rootVar)}`, "_blank");
+  }, [jsonInput, serializerOptions]);
+
   const searchResults = useMemo(() => {
     if (!parseResult.success || !parseResult.data) return [];
     if (!searchOptions.query && !searchOptions.numericMode) return [];
@@ -75,15 +85,27 @@ export default function Home() {
           hasJson={parseResult.success}
         />
 
-        <div className="border-t border-border pt-3">
-          {currentSerializer && (
-            <SerializerControls
-              serializers={allSerializers}
-              selectedId={serializerId}
-              onSelectId={handleSerializerChange}
-              options={serializerOptions}
-              onChangeOptions={setSerializerOptions}
-            />
+        <div className="border-t border-border pt-3 flex items-start justify-between gap-3">
+          <div className="flex-1">
+            {currentSerializer && (
+              <SerializerControls
+                serializers={allSerializers}
+                selectedId={serializerId}
+                onSelectId={handleSerializerChange}
+                options={serializerOptions}
+                onChangeOptions={setSerializerOptions}
+              />
+            )}
+          </div>
+          {parseResult.success && (
+            <button
+              onClick={openRootInExplorer}
+              className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded border border-border text-text-secondary hover:text-text-primary hover:border-border-hover transition-colors"
+              title="Open full JSON in Path Explorer"
+            >
+              <ExternalLink size={12} />
+              Explore
+            </button>
           )}
         </div>
       </div>
