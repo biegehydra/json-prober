@@ -15,6 +15,7 @@ import type { SearchOptions } from "@/lib/search/types";
 import { registerAllPresets } from "@/lib/serializers/presets";
 import { getAllSerializers, getSerializer } from "@/lib/serializers/registry";
 import { useSerializerStore } from "@/stores/serializer";
+import { saveExploreJson } from "@/lib/json-storage";
 import { trackExploreRoot, trackClickGithub } from "@/lib/analytics";
 
 registerAllPresets();
@@ -38,12 +39,8 @@ export default function Home() {
 
   const parseResult = useMemo(() => parseJson(jsonInput), [jsonInput]);
 
-  const openRootInExplorer = useCallback(() => {
-    try {
-      localStorage.setItem("jsonprober-explore-data", jsonInput);
-    } catch {
-      // quota exceeded
-    }
+  const openRootInExplorer = useCallback(async () => {
+    await saveExploreJson(jsonInput);
     const rootVar = (serializerOptions.rootVar as string) || "root";
     window.open(`/explore?path=${encodeURIComponent(rootVar)}`, "_blank");
     trackExploreRoot();

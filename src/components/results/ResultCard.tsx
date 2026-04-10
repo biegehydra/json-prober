@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight, ExternalLink, AlertTriangle } from "lucide-r
 import { CopyButton } from "../shared/CopyButton";
 import { JsonView } from "../shared/JsonView";
 import { checkPathAmbiguity } from "@/lib/path-resolver";
+import { saveExploreJson } from "@/lib/json-storage";
 import { trackExploreResult } from "@/lib/analytics";
 import type { SearchResult } from "@/lib/search/types";
 import type { Serializer } from "@/lib/serializers/types";
@@ -67,13 +68,9 @@ export function ResultCard({
     return checkPathAmbiguity(result.path, parsedData, access);
   }, [result.path, parsedData, serializer.definition.keyAccess]);
 
-  const openInExplorer = useCallback(() => {
+  const openInExplorer = useCallback(async () => {
     if (ambiguity) return;
-    try {
-      localStorage.setItem("jsonprober-explore-data", jsonInput);
-    } catch {
-      // quota exceeded
-    }
+    await saveExploreJson(jsonInput);
     const encoded = encodeURIComponent(serialized);
     window.open(`/explore?path=${encoded}`, "_blank");
     trackExploreResult();

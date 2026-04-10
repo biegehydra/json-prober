@@ -1,11 +1,15 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import CodeMirror, { type ViewUpdate } from "@uiw/react-codemirror";
 import { json } from "@codemirror/lang-json";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { Upload } from "lucide-react";
-import { trackPasteJson, trackUploadJson } from "@/lib/analytics";
+import {
+  trackLoadSampleJson,
+  trackPasteJson,
+  trackUploadJson,
+} from "@/lib/analytics";
 
 interface JsonEditorProps {
   value: string;
@@ -23,6 +27,23 @@ function tryBeautify(text: string): string {
 }
 
 export function JsonEditor({ value, onChange, error }: JsonEditorProps) {
+  const [sampleLoading, setSampleLoading] = useState(false);
+
+  const loadSampleJson = useCallback(async () => {
+    setSampleLoading(true);
+    try {
+      const res = await fetch("/sample.json");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      onChange(tryBeautify(text));
+      trackLoadSampleJson();
+    } catch {
+      console.error("Failed to load /sample.json");
+    } finally {
+      setSampleLoading(false);
+    }
+  }, [onChange]);
+
   const handleFileUpload = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -62,16 +83,26 @@ export function JsonEditor({ value, onChange, error }: JsonEditorProps) {
         <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">
           JSON Input
         </span>
-        <label className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded border border-border text-text-secondary hover:text-text-primary hover:border-border-hover cursor-pointer transition-colors">
-          <Upload size={12} />
-          Upload
-          <input
-            type="file"
-            accept=".json,.jsonc"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-        </label>
+        <div className="flex items-center gap-2">
+          <label className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded border border-border text-text-secondary hover:text-text-primary hover:border-border-hover cursor-pointer transition-colors">
+            <Upload size={12} />
+            Upload
+            <input
+              type="file"
+              accept=".json,.jsonc"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={loadSampleJson}
+            disabled={sampleLoading}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded border border-border text-text-secondary hover:text-text-primary hover:border-border-hover disabled:opacity-50 disabled:pointer-events-none transition-colors"
+          >
+            {sampleLoading ? "Loading…" : "Load Sample Json"}
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 min-h-0 overflow-hidden">

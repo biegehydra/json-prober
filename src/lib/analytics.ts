@@ -26,6 +26,7 @@ function trackEvent(name: string) {
 // --- JSON input ---
 export const trackPasteJson = () => trackEvent("paste_json");
 export const trackUploadJson = () => trackEvent("upload_json");
+export const trackLoadSampleJson = () => trackEvent("load_sample_json");
 
 // --- Serializer ---
 export const trackChangeSerializer = (id: string) =>

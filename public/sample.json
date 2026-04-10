@@ -1,0 +1,290 @@
+{
+    "results": [
+      {
+        "gender": "male",
+        "name": {
+          "title": "Mr",
+          "first": "Boris",
+          "last": "Katanić"
+        },
+        "location": {
+          "street": {
+            "number": 217,
+            "name": "Pasjanska"
+          },
+          "city": "Kladovo",
+          "state": "Toplica",
+          "country": "Serbia",
+          "postcode": 37006,
+          "coordinates": {
+            "latitude": "60.2184",
+            "longitude": "-2.3976"
+          },
+          "timezone": {
+            "offset": "+10:00",
+            "description": "Eastern Australia, Guam, Vladivostok"
+          }
+        },
+        "email": "boris.katanic@example.com",
+        "login": {
+          "uuid": "14f0a4e4-935e-43fb-95f9-52b273f77343",
+          "username": "yellowlion399",
+          "password": "field",
+          "salt": "Mnw5m0T2",
+          "md5": "0fa7673092b1d8a0b7506be301f852fe",
+          "sha1": "0158f531662f9c8c8e0904d7f557af238058a68d",
+          "sha256": "862e76ea6136c2a252f19797609e994ce48aa69f8febfc55cb08c637e3aaeb7c"
+        },
+        "dob": {
+          "date": "1952-11-17T19:46:05.010Z",
+          "age": 73
+        },
+        "registered": {
+          "date": "2016-05-26T09:35:39.237Z",
+          "age": 9
+        },
+        "phone": "021-9441-224",
+        "cell": "064-3627-230",
+        "id": {
+          "name": "SID",
+          "value": "716257503"
+        },
+        "picture": {
+          "large": "https://randomuser.me/api/portraits/men/12.jpg",
+          "medium": "https://randomuser.me/api/portraits/med/men/12.jpg",
+          "thumbnail": "https://randomuser.me/api/portraits/thumb/men/12.jpg"
+        },
+        "nat": "RS"
+      },
+      {
+        "gender": "male",
+        "name": {
+          "title": "Mr",
+          "first": "Kristupas",
+          "last": "Grønli"
+        },
+        "location": {
+          "street": {
+            "number": 7269,
+            "name": "Stormyrveien"
+          },
+          "city": "Jelsnes",
+          "state": "Sogn og Fjordane",
+          "country": "Norway",
+          "postcode": "3295",
+          "coordinates": {
+            "latitude": "-5.3694",
+            "longitude": "-31.9550"
+          },
+          "timezone": {
+            "offset": "-10:00",
+            "description": "Hawaii"
+          }
+        },
+        "email": "kristupas.gronli@example.com",
+        "login": {
+          "uuid": "594c440b-2a39-4b91-9b18-41bd5a999fdc",
+          "username": "blackbear384",
+          "password": "money",
+          "salt": "JJ01W7Ni",
+          "md5": "b065b5e94a869517038fe113e201a9a8",
+          "sha1": "51249af23642918dc76e6117377aa4658924561f",
+          "sha256": "ce88db3f11338f67cfe43ba548fa1c743436d19047567706cd1425bdb4c0e409"
+        },
+        "dob": {
+          "date": "1989-03-09T13:16:53.891Z",
+          "age": 37
+        },
+        "registered": {
+          "date": "2008-02-13T04:09:03.307Z",
+          "age": 18
+        },
+        "phone": "64542248",
+        "cell": "47347183",
+        "id": {
+          "name": "FN",
+          "value": "09038941779"
+        },
+        "picture": {
+          "large": "https://randomuser.me/api/portraits/men/53.jpg",
+          "medium": "https://randomuser.me/api/portraits/med/men/53.jpg",
+          "thumbnail": "https://randomuser.me/api/portraits/thumb/men/53.jpg"
+        },
+        "nat": "NO"
+      },
+      {
+        "gender": "female",
+        "name": {
+          "title": "Miss",
+          "first": "فاطمه زهرا",
+          "last": "نكو نظر"
+        },
+        "location": {
+          "street": {
+            "number": 9472,
+            "name": "میدان 7 تیر"
+          },
+          "city": "ورامین",
+          "state": "خراسان جنوبی",
+          "country": "Iran",
+          "postcode": 42061,
+          "coordinates": {
+            "latitude": "80.6071",
+            "longitude": "49.2602"
+          },
+          "timezone": {
+            "offset": "-2:00",
+            "description": "Mid-Atlantic"
+          }
+        },
+        "email": "ftmhzhr.nkwnzr@example.com",
+        "login": {
+          "uuid": "29205c48-8787-4446-96b5-7c1c6259a9b2",
+          "username": "redpeacock240",
+          "password": "wendy1",
+          "salt": "75GsZMEP",
+          "md5": "b30d9552030aead3dcb9b04630362178",
+          "sha1": "6e3d9a46fa6596a4b87f1eba767dfea25c0b5663",
+          "sha256": "9eeba33d93dd9025c1ca22905088f65ead361071554d02c240dfd7b7a2662970"
+        },
+        "dob": {
+          "date": "1988-03-30T09:25:41.694Z",
+          "age": 38
+        },
+        "registered": {
+          "date": "2005-02-07T16:46:10.539Z",
+          "age": 21
+        },
+        "phone": "043-91616085",
+        "cell": "0994-996-6737",
+        "id": {
+          "name": "",
+          "value": null
+        },
+        "picture": {
+          "large": "https://randomuser.me/api/portraits/women/56.jpg",
+          "medium": "https://randomuser.me/api/portraits/med/women/56.jpg",
+          "thumbnail": "https://randomuser.me/api/portraits/thumb/women/56.jpg"
+        },
+        "nat": "IR"
+      },
+      {
+        "gender": "male",
+        "name": {
+          "title": "Mr",
+          "first": "Leevi",
+          "last": "Honkala"
+        },
+        "location": {
+          "street": {
+            "number": 1370,
+            "name": "Rotuaari"
+          },
+          "city": "Vähäkyrö",
+          "state": "Åland",
+          "country": "Finland",
+          "postcode": 49387,
+          "coordinates": {
+            "latitude": "-19.9392",
+            "longitude": "161.0200"
+          },
+          "timezone": {
+            "offset": "+2:00",
+            "description": "Kaliningrad, South Africa"
+          }
+        },
+        "email": "leevi.honkala@example.com",
+        "login": {
+          "uuid": "ad45fe84-da7a-4fbc-ac29-76f1b2a1c9f7",
+          "username": "greenelephant580",
+          "password": "eggplant",
+          "salt": "Xh3BefLk",
+          "md5": "dbe9b3739db0ba8168540e7bf128c3e5",
+          "sha1": "05ce824e001e49ce5310304ee0ab0f783ae3401e",
+          "sha256": "dd5b42aec5bfe7c95692ac0abdf41964898826f73262420811c3e2374636a7d9"
+        },
+        "dob": {
+          "date": "1999-07-22T12:06:24.010Z",
+          "age": 26
+        },
+        "registered": {
+          "date": "2011-12-23T21:56:48.025Z",
+          "age": 14
+        },
+        "phone": "04-006-718",
+        "cell": "043-826-85-38",
+        "id": {
+          "name": "HETU",
+          "value": "NaNNA099undefined"
+        },
+        "picture": {
+          "large": "https://randomuser.me/api/portraits/men/98.jpg",
+          "medium": "https://randomuser.me/api/portraits/med/men/98.jpg",
+          "thumbnail": "https://randomuser.me/api/portraits/thumb/men/98.jpg"
+        },
+        "nat": "FI"
+      },
+      {
+        "gender": "male",
+        "name": {
+          "title": "Mr",
+          "first": "Konsta",
+          "last": "Tanner"
+        },
+        "location": {
+          "street": {
+            "number": 9622,
+            "name": "Myllypuronkatu"
+          },
+          "city": "Lavia",
+          "state": "Kymenlaakso",
+          "country": "Finland",
+          "postcode": 29651,
+          "coordinates": {
+            "latitude": "76.8071",
+            "longitude": "168.5146"
+          },
+          "timezone": {
+            "offset": "-7:00",
+            "description": "Mountain Time (US & Canada)"
+          }
+        },
+        "email": "konsta.tanner@example.com",
+        "login": {
+          "uuid": "bac6c557-282b-4ff7-81e7-11925538f7f5",
+          "username": "happyelephant254",
+          "password": "krista",
+          "salt": "XjIe9V0X",
+          "md5": "358cf62c20eb4980134beab2b34b475f",
+          "sha1": "c2e60b6ed0325f93542311457557ad162c3dec49",
+          "sha256": "86841d0befe99adba6020598e46b85912d962fe705b4eba8008816a569325134"
+        },
+        "dob": {
+          "date": "1948-11-23T21:38:54.355Z",
+          "age": 77
+        },
+        "registered": {
+          "date": "2016-12-30T06:01:38.943Z",
+          "age": 9
+        },
+        "phone": "08-002-102",
+        "cell": "043-703-74-61",
+        "id": {
+          "name": "HETU",
+          "value": "NaNNA073undefined"
+        },
+        "picture": {
+          "large": "https://randomuser.me/api/portraits/men/64.jpg",
+          "medium": "https://randomuser.me/api/portraits/med/men/64.jpg",
+          "thumbnail": "https://randomuser.me/api/portraits/thumb/men/64.jpg"
+        },
+        "nat": "FI"
+      }
+    ],
+    "info": {
+      "seed": "abfd5efbdce7aaf3",
+      "results": 5,
+      "page": 1,
+      "version": "1.4"
+    }
+  }

@@ -14,6 +14,7 @@ import { getAllSerializers, getSerializer } from "@/lib/serializers/registry";
 import { convertPath } from "@/lib/serializers/serialize";
 import { useSerializerStore } from "@/stores/serializer";
 import type { AccessorDefinition } from "@/lib/serializers/types";
+import { loadExploreJson } from "@/lib/json-storage";
 import { trackChangeSerializer } from "@/lib/analytics";
 
 registerAllPresets();
@@ -64,21 +65,26 @@ function ExploreContent() {
   }, [serializerId, currentSerializer, pathInput, jsonData]);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("jsonprober-explore-data");
-      if (!raw) {
-        setLoadError("No JSON data found. Go back to the main page and open a result.");
-        return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const raw = await loadExploreJson();
+        if (cancelled) return;
+        if (!raw) {
+          setLoadError("No JSON data found. Go back to the main page and open a result.");
+          return;
+        }
+        const parsed = parseJson(raw);
+        if (!parsed.success || parsed.data === undefined) {
+          setLoadError("Failed to parse stored JSON data.");
+          return;
+        }
+        setJsonData(parsed.data);
+      } catch {
+        if (!cancelled) setLoadError("Failed to read JSON data from storage.");
       }
-      const parsed = parseJson(raw);
-      if (!parsed.success || parsed.data === undefined) {
-        setLoadError("Failed to parse stored JSON data.");
-        return;
-      }
-      setJsonData(parsed.data);
-    } catch {
-      setLoadError("Failed to read JSON data from storage.");
-    }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const accessorDef = currentSerializer?.definition;
